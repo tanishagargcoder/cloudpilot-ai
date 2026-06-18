@@ -23,6 +23,7 @@ def detect_anomalies(state: AgentState) -> AgentState:
     )
 
     datapoints = response.get("Datapoints", [])
+    print("CloudWatch datapoints:", datapoints)
     anomalies = []
 
     for point in datapoints:
@@ -34,6 +35,13 @@ def detect_anomalies(state: AgentState) -> AgentState:
                 "resource": instance_id,
             })
 
-    state["metrics"] = {"datapoints": datapoints}
+    state["metrics"] = {
+    "datapoints": [
+        {
+            "Average": p["Average"],
+            "Timestamp": str(p["Timestamp"])
+        }
+        for p in datapoints
+    ]}
     state["anomalies"] = anomalies
     return state
