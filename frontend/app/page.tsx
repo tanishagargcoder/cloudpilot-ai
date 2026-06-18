@@ -1,11 +1,27 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
+type PipelineState = {
+  metrics: Record<string, unknown>;
+  anomalies: unknown[];
+  root_cause: string | null;
+  fix_plan: string | null;
+  report: string | null;
+  requires_approval: boolean;
+};
+
+type IncidentRecord = PipelineState & {
+  id: string;
+  created_at: string;
+  status: "healthy" | "needs_approval";
+};
+
 type AgentEvent = {
   event: string;
   agent?: string;
   result?: Record<string, unknown>;
   message?: string;
+  final_state?: PipelineState;
 };
 
 export default function Dashboard() {
@@ -23,9 +39,29 @@ export default function Dashboard() {
     ws.onclose = () => setConnected(false);
 
     ws.onmessage = (e) => {
-      const data = JSON.parse(e.data);
+      const data: AgentEvent = JSON.parse(e.data);
       setEvents((prev) => [...prev, data]);
-      if (data.event === "pipeline_complete") setRunning(false);
+
+      if (data.event === "pipeline_complete") {
+        setRunning(false);
+
+        if (data.final_state) {
+          const incident: IncidentRecord = {
+            ...data.final_state,
+            id: `incident-${Date.now()}`,
+            created_at: new Date().toISOString(),
+            status: data.final_state.requires_approval ? "needs_approval" : "healthy",
+          };
+
+          localStorage.setItem("cloudpilot_latest_incident", JSON.stringify(incident));
+
+          const existing = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
+          localStorage.setItem(
+            "cloudpilot_incidents",
+            JSON.stringify([incident, ...existing].slice(0, 10))
+          );
+        }
+      }
     };
 
     return () => ws.close();
@@ -89,7 +125,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Live feed */}
       <div style={{
         background: "#1a1d27",
         border: "1px solid #2a2d3a",
@@ -130,7 +165,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats row */}
       {events.some(e => e.event === "pipeline_complete") && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
           {[
