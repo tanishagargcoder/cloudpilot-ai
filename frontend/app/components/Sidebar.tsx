@@ -1,12 +1,20 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, FileText, ShieldAlert, Cloud } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  ShieldAlert,
+  Cloud,
+  Bell,
+} from "lucide-react";
+
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Incidents", href: "/incidents", icon: FileText },
   { label: "Approvals", href: "/approvals", icon: ShieldAlert },
+  { label: "Notifications", href: "/notifications", icon: Bell },
 ];
 
 export function Sidebar() {
