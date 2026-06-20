@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Cpu, Brain, Cloud, Monitor, Moon, LayoutGrid, Save, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Cpu, Brain, Cloud, Monitor, Moon, LayoutGrid, Save, RotateCcw, CheckCircle2, ArrowLeft } from "lucide-react";
 
 type SettingsState = {
   monitoring: {
@@ -94,8 +94,17 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Page Header */}
+      {/* Page Header with Back Button */}
       <div>
+        <div className="flex items-center gap-2 mb-3">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </a>
+        </div>
         <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Settings</h1>
         <p className="text-slate-500 mt-2">Configure monitoring thresholds, AI parameters, and platform preferences</p>
       </div>

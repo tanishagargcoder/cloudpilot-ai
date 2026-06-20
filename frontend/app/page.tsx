@@ -28,6 +28,39 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+// ============ NOTIFICATION BADGE COMPONENT ============
+function NotificationBadge() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const check = () => {
+      const stored = localStorage.getItem("cloudpilot_notifications");
+      if (stored) {
+        try {
+          const notifs = JSON.parse(stored);
+          setCount(notifs.filter((n: any) => !n.read).length);
+        } catch { setCount(0); }
+      }
+    };
+    check();
+    const interval = setInterval(check, 2000);
+    window.addEventListener("storage", check);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", check);
+    };
+  }, []);
+
+  if (count === 0) return null;
+
+  return (
+    <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-lg shadow-red-500/30">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+// ============ TYPES ============
 type PipelineState = {
   metrics: Record<string, unknown>;
   anomalies: unknown[];
@@ -59,6 +92,7 @@ type AgentStatus = {
   tasks: number;
 };
 
+// ============ MOCK DATA ============
 const mockAgents: AgentStatus[] = [
   { id: "agent-1", name: "Monitoring Agent", status: "running", lastSeen: "2s ago", tasks: 142 },
   { id: "agent-2", name: "Analysis Agent", status: "running", lastSeen: "5s ago", tasks: 89 },
@@ -99,6 +133,7 @@ const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info 
   success: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle2 },
 };
 
+// ============ HELPERS ============
 function CustomTooltip({ active, payload, label }: any) {
   if (active && payload && payload.length) {
     return (
@@ -116,58 +151,31 @@ function CustomTooltip({ active, payload, label }: any) {
   return null;
 }
 
-function Card({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-xl border border-slate-800 bg-slate-900/50 text-slate-100 shadow-sm backdrop-blur-sm ${className}`}
-    >
+    <div className={`rounded-xl border border-slate-800 bg-slate-900/50 text-slate-100 shadow-sm backdrop-blur-sm ${className}`}>
       {children}
     </div>
   );
 }
 
-function CardHeader({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function CardHeader({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
 }
 
-function CardTitle({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function CardTitle({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <h3
-      className={`text-lg font-semibold leading-none tracking-tight text-slate-100 ${className}`}
-    >
+    <h3 className={`text-lg font-semibold leading-none tracking-tight text-slate-100 ${className}`}>
       {children}
     </h3>
   );
 }
 
-function CardContent({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function CardContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
 }
 
+// ============ MAIN DASHBOARD ============
 export default function Dashboard() {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [running, setRunning] = useState(false);
@@ -212,32 +220,42 @@ export default function Dashboard() {
     return () => ws.close();
   }, []);
 
-
+  const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
-  fetch(`${process.env.NEXT_PUBLIC_API_URL}/metrics/ec2-cpu`)
-    .then((r) => r.json())
-    .then((data) => {
-      const points = (data.datapoints || [])
-        .sort(
-          (a: { Timestamp: string }, b: { Timestamp: string }) =>
-            new Date(a.Timestamp).getTime() -
-            new Date(b.Timestamp).getTime()
-        )
-        .map((p: { Timestamp: string; Average: number }) => ({
-          time: new Date(p.Timestamp).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          usage: Math.round(p.Average * 100) / 100,
-        }));
-
-      if (points.length > 0) {
-        setCpuData(points);
-      }
-    })
-    .catch((err) => console.log("CPU fetch failed", err));
+    const stored = localStorage.getItem("cloudpilot_notifications");
+    if (stored) {
+      try {
+        const notifications = JSON.parse(stored);
+        setUnreadCount(
+          notifications.filter((n: any) => !n.read).length
+        );
+      } catch {}
+    }
   }, []);
 
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/metrics/ec2-cpu`)
+      .then((r) => r.json())
+      .then((data) => {
+        const points = (data.datapoints || [])
+          .sort(
+            (a: { Timestamp: string }, b: { Timestamp: string }) =>
+              new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime()
+          )
+          .map((p: { Timestamp: string; Average: number }) => ({
+            time: new Date(p.Timestamp).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            usage: Math.round(p.Average * 100) / 100,
+          }));
+
+        if (points.length > 0) {
+          setCpuData(points);
+        }
+      })
+      .catch((err) => console.log("CPU fetch failed", err));
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("cloudpilot_incidents");
@@ -350,7 +368,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Header */}
+      {/* ============ HEADER WITH NOTIFICATION BADGE ============ */}
       <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
         <div className="flex h-16 items-center justify-between px-4 lg:px-8">
           <div className="flex items-center gap-3">
@@ -371,13 +389,21 @@ export default function Dashboard() {
                 className="h-9 w-64 rounded-lg border border-slate-800 bg-slate-900 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
+            {/* Notifications with dynamic badge */}
+            <a
+              href="/notifications"
+              className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors"
+            >
               <Bell className="h-4 w-4" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500"></span>
-            </button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
+              <NotificationBadge />
+            </a>
+            {/* Settings */}
+            <a
+              href="/settings"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors"
+            >
               <Settings className="h-4 w-4" />
-            </button>
+            </a>
           </div>
         </div>
       </header>
@@ -431,7 +457,12 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">CPU Usage</CardTitle>
+              <CardTitle className="text-base flex items-center justify-between">
+                CPU Usage
+                <span className="text-xs font-normal text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                Live from AWS
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -571,7 +602,6 @@ export default function Dashboard() {
 
         {/* Agent Status + Live Feed */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Agent Status Panel */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-base">Agent Status</CardTitle>
@@ -586,9 +616,7 @@ export default function Dashboard() {
                     className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/80 p-3 hover:border-slate-700 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-lg ${config.bg}`}
-                      >
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${config.bg}`}>
                         <StatusIcon className={`h-4 w-4 ${config.color}`} />
                       </div>
                       <div>
@@ -597,9 +625,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.bg} ${config.color}`}
-                      >
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.bg} ${config.color}`}>
                         {agent.status}
                       </span>
                       <p className="text-xs text-slate-500 mt-1">{agent.tasks} tasks</p>
@@ -610,7 +636,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Live Agent Feed */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -622,10 +647,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div
-                ref={feedRef}
-                className="space-y-3 max-h-[400px] overflow-y-auto pr-2"
-              >
+              <div ref={feedRef} className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                 {events.length === 0 && (
                   <div className="text-slate-600 text-sm text-center py-24">
                     Click "Run Agent Pipeline" to start monitoring
@@ -636,20 +658,13 @@ export default function Dashboard() {
                   const config = typeConfig[evType] || typeConfig.info;
                   const TypeIcon = config.icon;
                   return (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3"
-                    >
-                      <div
-                        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${config.bg}`}
-                      >
+                    <div key={i} className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${config.bg}`}>
                         <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-slate-400">
-                            {getAgentLabel(ev)}
-                          </p>
+                          <p className="text-xs font-medium text-slate-400">{getAgentLabel(ev)}</p>
                           <p className="text-xs text-slate-600 shrink-0">just now</p>
                         </div>
                         {ev.result && (
@@ -666,7 +681,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Recent Incidents from localStorage */}
+        {/* Recent Incidents */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Recent Incidents</CardTitle>
@@ -687,10 +702,7 @@ export default function Dashboard() {
                 <tbody className="divide-y divide-slate-800">
                   {incidents.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="py-8 text-center text-slate-600 text-sm"
-                      >
+                      <td colSpan={6} className="py-8 text-center text-slate-600 text-sm">
                         No incidents recorded yet. Run the agent pipeline to generate incident data.
                       </td>
                     </tr>
@@ -698,36 +710,21 @@ export default function Dashboard() {
                   {incidents.map((incident) => {
                     const sev = severityConfig[getIncidentSeverity(incident)];
                     return (
-                      <tr
-                        key={incident.id}
-                        className="hover:bg-slate-800/50 transition-colors"
-                      >
-                        <td className="py-3 pr-4 font-mono text-xs text-slate-400">
-                          {incident.id}
-                        </td>
+                      <tr key={incident.id} className="hover:bg-slate-800/50 transition-colors">
+                        <td className="py-3 pr-4 font-mono text-xs text-slate-400">{incident.id}</td>
                         <td className="py-3 pr-4">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}
-                          >
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}>
                             {sev.label}
                           </span>
                         </td>
                         <td className="py-3 pr-4">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[incident.status]}`}
-                          >
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[incident.status]}`}>
                             {incident.status}
                           </span>
                         </td>
-                        <td className="py-3 pr-4 text-slate-300">
-                          {(incident.anomalies as unknown[])?.length ?? 0}
-                        </td>
-                        <td className="py-3 pr-4 text-slate-300 max-w-xs truncate">
-                          {incident.root_cause || "—"}
-                        </td>
-                        <td className="py-3 text-slate-500 text-xs">
-                          {new Date(incident.created_at).toLocaleTimeString()}
-                        </td>
+                        <td className="py-3 pr-4 text-slate-300">{(incident.anomalies as unknown[])?.length ?? 0}</td>
+                        <td className="py-3 pr-4 text-slate-300 max-w-xs truncate">{(incident.root_cause || "—").replace(/\*\*/g, "").replace(/\*/g, "")}</td>
+                        <td className="py-3 text-slate-500 text-xs">{new Date(incident.created_at).toLocaleTimeString()}</td>
                       </tr>
                     );
                   })}
@@ -737,36 +734,21 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Pipeline Summary Cards (existing functionality preserved) */}
+        {/* Pipeline Summary */}
         {events.some((e) => e.event === "pipeline_complete") && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               {
                 label: "Anomalies Found",
-                value:
-                  (
-                    events.find(
-                      (e) => e.agent === "anomaly_detector" && e.event === "agent_complete"
-                    )?.result?.anomalies as unknown[]
-                  )?.length ?? 0,
+                value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0,
                 color: "text-red-400",
               },
-              {
-                label: "Root Cause",
-                value: "Generated",
-                color: "text-blue-400",
-              },
-              {
-                label: "Fix Plan",
-                value: "Ready for review",
-                color: "text-emerald-400",
-              },
+              { label: "Root Cause", value: "Generated", color: "text-blue-400" },
+              { label: "Fix Plan", value: "Ready for review", color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
               <Card key={label}>
                 <CardContent className="pt-6">
-                  <div className="text-xs text-slate-500 uppercase tracking-wider">
-                    {label}
-                  </div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider">{label}</div>
                   <div className={`text-2xl font-bold ${color} mt-2`}>{value}</div>
                 </CardContent>
               </Card>
