@@ -17,12 +17,9 @@ import {
   Bot,
   Lightbulb,
   Activity,
+  Search,
   Pause,
   Play,
-  Cloud,
-  Bell,
-  Settings,
-  Search,
   Zap,
   Info,
   CheckCircle2,
@@ -182,6 +179,8 @@ export default function Dashboard() {
   const [connected, setConnected] = useState(false);
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [cpuData, setCpuData] = useState<{ time: string; usage: number }[]>([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -204,15 +203,59 @@ export default function Dashboard() {
             ...data.final_state,
             id: `incident-${Date.now()}`,
             created_at: new Date().toISOString(),
-            status: data.final_state.requires_approval ? "needs_approval" : "healthy",
+            status: data.final_state.requires_approval
+            ? "needs_approval"
+            : "healthy",
           };
-
-          localStorage.setItem("cloudpilot_latest_incident", JSON.stringify(incident));
-
-          const existing = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
+          // Save latest incident
+          localStorage.setItem(
+            "cloudpilot_latest_incident",
+            JSON.stringify(incident)
+          );
+          // Save incidents list
+          const existing = JSON.parse(
+            localStorage.getItem("cloudpilot_incidents") || "[]"
+          );
           const updated = [incident, ...existing].slice(0, 10);
-          localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
+          localStorage.setItem(
+            "cloudpilot_incidents",
+            JSON.stringify(updated)
+          );
           setIncidents(updated);
+          // CREATE NOTIFICATION
+          const notifications = JSON.parse(
+            localStorage.getItem("cloudpilot_notifications") || "[]"
+          );
+          notifications.unshift({
+            id: `notif-${Date.now()}`,
+            title: incident.status === "needs_approval"
+            ? "Approval Required"
+            : "New Incident Created",
+            message: incident.status === "needs_approval"
+            ? `${incident.id} requires approval`
+            : `${incident.id} detected`,
+            severity: incident.status === "needs_approval"
+            ? "warning"
+            : "critical",
+
+            time: new Date().toLocaleString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          
+            read: false,
+            type: incident.status === "needs_approval"
+            ? "approval"
+            : "incident",
+          });
+          localStorage.setItem(
+            "cloudpilot_notifications",
+            JSON.stringify(notifications)
+          );
+          console.log("NOTIFICATIONS SAVED:", notifications);
         }
       }
     };
@@ -368,54 +411,31 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* ============ HEADER WITH NOTIFICATION BADGE ============ */}
-      <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-        <div className="flex h-16 items-center justify-between px-4 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-              <Cloud className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-lg font-semibold tracking-tight">CloudPilot AI</h1>
-            <span className="hidden sm:inline-flex rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-400">
-              DevOps Assistant
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="h-9 w-64 rounded-lg border border-slate-800 bg-slate-900 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            {/* Notifications with dynamic badge */}
-            <a
-              href="/notifications"
-              className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              <Bell className="h-4 w-4" />
-              <NotificationBadge />
-            </a>
-            {/* Settings */}
-            <a
-              href="/settings"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-            </a>
-          </div>
+
+      <div className="relative hidden sm:block">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+        <input
+        type="text"
+        placeholder="Search..."
+        className="h-9 w-64 rounded-lg border border-slate-800 bg-slate-900 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"/>
         </div>
-      </header>
 
       {/* Main Content */}
       <main className="p-4 lg:p-8 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-100">
+            Dashboard
+          </h1>
+          <p className="text-slate-500 mt-1">
+            Real-time AWS monitoring and AI remediation
+          </p>
+        </div>
         {/* Status Bar */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
             <span
               className={`inline-flex h-2.5 w-2.5 rounded-full ${
-                connected ? "bg-emerald-500" : "bg-red-500"
+                connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"
               }`}
             />
             <span className={connected ? "text-emerald-400" : "text-red-400"}>

@@ -10,6 +10,7 @@ import {
   BarChart3,
   Cloud,
   Bell,
+  Server,
   Settings,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ const navItems = [
   { label: "Incidents", href: "/incidents", icon: FileText },
   { label: "Approvals", href: "/approvals", icon: ShieldAlert },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { label: "Services", href: "/services", icon: Server },
 ];
 
 export function Sidebar() {
