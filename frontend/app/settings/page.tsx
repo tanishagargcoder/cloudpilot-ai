@@ -79,7 +79,7 @@ export default function SettingsPage() {
 
   // Avoid hydration mismatch
   useEffect(() => { setMounted(true); }, []);
-
+  
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -90,6 +90,10 @@ export default function SettingsPage() {
       } catch {}
     }
   }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   const update = (section: keyof SettingsState, key: string, value: any) => {
     setSettings((prev) => ({
@@ -114,7 +118,7 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const isDark = resolvedTheme === "dark";
+  const isDark = theme === "dark";
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

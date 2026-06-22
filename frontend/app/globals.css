@@ -1,15 +1,50 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@variant dark (&:where(.dark, .dark *));
 
+/* Theme Variables */
 :root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+.dark {
   --background: #020617;
   --foreground: #f1f5f9;
 }
 
+
+/* Light mode overrides for components */
+:root:not(.dark) {
+  color-scheme: light;
+}
+
+:root:not(.dark) .bg-slate-950 { background-color: #f8fafc !important; }
+:root:not(.dark) .bg-slate-900 { background-color: #f1f5f9 !important; }
+:root:not(.dark) .bg-slate-900\/50 { background-color: rgba(241,245,249,0.8) !important; }
+:root:not(.dark) .bg-slate-800 { background-color: #e2e8f0 !important; }
+:root:not(.dark) .text-slate-100 { color: #0f172a !important; }
+:root:not(.dark) .text-slate-200 { color: #1e293b !important; }
+:root:not(.dark) .text-slate-300 { color: #334155 !important; }
+:root:not(.dark) .text-slate-400 { color: #475569 !important; }
+:root:not(.dark) .border-slate-800 { border-color: #cbd5e1 !important; }
+:root:not(.dark) .border-slate-700 { border-color: #94a3b8 !important; }
+
 body {
-  background: #020617;
-  color: #f1f5f9;
+  background: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.25s ease, color 0.25s ease;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Base */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
 /* Scrollbar */
@@ -35,7 +70,7 @@ body {
   border: 1px solid rgba(51, 65, 85, 0.5);
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(10px);
-  transition: all .25s ease;
+  transition: all 0.25s ease;
 }
 
 .glass-card-hover:hover {
@@ -45,7 +80,7 @@ body {
 
 /* Animations */
 .animate-in {
-  animation: animateIn .25s ease-out;
+  animation: animateIn 0.25s ease-out;
 }
 
 @keyframes animateIn {
