@@ -46,6 +46,70 @@ def get_ec2_cpu():
     datapoints = response.get("Datapoints", [])
     return {"instance_id": os.getenv("EC2_INSTANCE_ID"), "datapoints": datapoints}
 
+@app.get("/services/health")
+def get_services_health():
+    services = {
+        "ec2": {"status": "unknown"},
+        "cloudwatch": {"status": "unknown"},
+        "lambda": {"status": "unknown"},
+        "slack": {"status": "unknown"},
+    }
+
+    try:
+        ec2 = boto3.client("ec2", region_name=os.getenv("AWS_REGION"))
+
+        instance_id = os.getenv("EC2_INSTANCE_ID")
+
+        response = ec2.describe_instance_status(
+            InstanceIds=[instance_id],
+            IncludeAllInstances=True
+        )
+
+        if response["InstanceStatuses"]:
+            state = response["InstanceStatuses"][0]["InstanceState"]["Name"]
+
+            services["ec2"] = {
+                "status": "healthy" if state == "running" else "degraded",
+                "state": state
+            }
+    except Exception as e:
+        services["ec2"] = {
+            "status": "offline",
+            "error": str(e)
+        }
+
+    try:
+        cloudwatch.list_metrics(MaxRecords=1)
+        services["cloudwatch"] = {"status": "healthy"}
+    except Exception as e:
+        services["cloudwatch"] = {
+            "status": "offline",
+            "error": str(e)
+        }
+
+    try:
+        lambda_client = boto3.client(
+            "lambda",
+            region_name=os.getenv("AWS_REGION")
+        )
+
+        lambda_client.list_functions(MaxItems=1)
+
+        services["lambda"] = {"status": "healthy"}
+    except Exception as e:
+        services["lambda"] = {
+            "status": "offline",
+            "error": str(e)
+        }
+
+    services["slack"] = {
+        "status": "connected"
+            if os.getenv("SLACK_WEBHOOK_URL")
+            else "offline"
+    }
+
+    return services
+
 
 @app.post("/run-agent")
 def run_agent():

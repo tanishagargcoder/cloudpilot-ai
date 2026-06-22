@@ -27,7 +27,7 @@ def detect_anomalies(state: AgentState) -> AgentState:
     anomalies = []
 
     for point in datapoints:
-        if point["Average"] > 70:
+        if point["Average"] > 0.15:
             anomalies.append({
                 "metric": "CPUUtilization",
                 "value": point["Average"],

@@ -34,18 +34,67 @@ def generate_fix(state: AgentState) -> AgentState:
         "- Only suggest changes to existing resources, don't invent new unrelated ones\n"
         "- Show the exact line(s) to change, with before/after\n"
         "- Keep your explanation under 80 words\n"
-        "- If no infrastructure change is appropriate, say so clearly instead of forcing a Terraform change\n\n"
+        "- If no infrastructure change is appropriate, say so clearly\n\n"
         "Format your response as:\n"
         "DIAGNOSIS: <one line>\n"
         "TERRAFORM CHANGE: <before/after code or 'None needed'>\n"
         "REASONING: <short explanation>"
     )
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        state["fix_plan"] = response.text
 
-    state["fix_plan"] = response.text
+    except Exception as e:
+        error_str = str(e).lower()
+        anomalies = state.get("anomalies", [])
+
+        if anomalies:
+            worst = max(anomalies, key=lambda a: a.get("value", 0))
+            cpu_val = worst.get("value", 0)
+
+            if cpu_val > 80:
+                fix = (
+                    "DIAGNOSIS: High CPU utilization detected — instance may be undersized.\n\n"
+                    "TERRAFORM CHANGE:\n"
+                    "```diff\n"
+                    "- instance_type = \"t3.micro\"\n"
+                    "+ instance_type = \"t3.small\"\n"
+                    "```\n\n"
+                    "REASONING: Upgrading from t3.micro to t3.small doubles available CPU and memory, "
+                    "reducing the risk of sustained high CPU and credit exhaustion."
+                )
+            else:
+                fix = (
+                    "DIAGNOSIS: Moderate CPU spike — likely burstable credit exhaustion on t3.micro.\n\n"
+                    "TERRAFORM CHANGE:\n"
+                    "```diff\n"
+                    "  resource \"aws_instance\" \"monitored_server\" {\n"
+                    "    instance_type = \"t3.micro\"\n"
+                    "+   credit_specification {\n"
+                    "+     cpu_credits = \"unlimited\"\n"
+                    "+   }\n"
+                    "  }\n"
+                    "```\n\n"
+                    "REASONING: Enabling unlimited CPU credits prevents performance throttling "
+                    "when the instance exhausts its burst credits during peak activity."
+                )
+        else:
+            fix = (
+                "DIAGNOSIS: No critical anomalies detected — system appears stable.\n\n"
+                "TERRAFORM CHANGE: None needed\n\n"
+                "REASONING: Current infrastructure configuration is appropriate for observed workload."
+            )
+
+        quota_note = "\n\n_(Note: AI fix generation unavailable — " + \
+            ("quota exceeded" if "quota" in error_str or "429" in error_str else "API error") + \
+            ". Using rule-based fallback.)_"
+
+        state["fix_plan"] = fix + quota_note
+        state["requires_approval"] = True
+
     state["requires_approval"] = True
     return state

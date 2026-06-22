@@ -5,10 +5,6 @@ from agents.state import AgentState
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def analyze_root_cause(state: AgentState) -> AgentState:
-    """
-    Takes the anomalies found by the detector agent and asks Gemini
-    to reason about likely root causes.
-    """
     anomalies = state.get("anomalies", [])
 
     if not anomalies:
@@ -20,26 +16,38 @@ def analyze_root_cause(state: AgentState) -> AgentState:
         for a in anomalies
     ])
 
-    prompt = f"""You are a DevOps Root Cause Analysis assistant.
-
-The following anomalies were detected on an AWS EC2 instance running a basic web server:
-
-{anomaly_summary}
-
-Context: This is a t3.micro instance with 2 vCPUs, currently used for a demo
-DevOps monitoring project. No production traffic is running on it.
-
-Based on this information, provide:
-1. A likely root cause (1-2 sentences)
-2. A confidence level (low/medium/high)
-3. One recommended next step
-
-Keep your entire response under 100 words."""
-
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
+    prompt = (
+        "You are a DevOps Root Cause Analysis assistant.\n\n"
+        "The following anomalies were detected on an AWS EC2 instance:\n"
+        f"{anomaly_summary}\n\n"
+        "Context: t3.micro instance, 2 vCPUs, demo DevOps monitoring project.\n\n"
+        "Provide:\n"
+        "1. A likely root cause (1-2 sentences)\n"
+        "2. Confidence level (low/medium/high)\n"
+        "3. One recommended next step\n\n"
+        "Keep response under 100 words."
     )
 
-    state["root_cause"] = response.text
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        state["root_cause"] = response.text
+    except Exception as e:
+        # If Gemini fails (quota/rate limit), use a smart fallback
+        error_str = str(e).lower()
+        if anomalies:
+            worst = max(anomalies, key=lambda a: a['value'])
+            state["root_cause"] = (
+                f"1. **Likely Root Cause:** CPU spike of {worst['value']:.2f}% detected on {worst['resource']}. "
+                f"Likely caused by background processes or monitoring agent activity on the t3.micro instance.\n"
+                f"2. **Confidence Level:** Medium\n"
+                f"3. **Recommended Next Step:** SSH into the instance and run `top` to identify high-CPU processes. "
+                f"Consider switching to unlimited CPU credits mode.\n\n"
+                f"_(Note: AI analysis unavailable — {('quota exceeded' if 'quota' in error_str or '429' in error_str else 'API error')}. Using rule-based fallback.)_"
+            )
+        else:
+            state["root_cause"] = "No anomalies detected — system healthy."
+    
     return state

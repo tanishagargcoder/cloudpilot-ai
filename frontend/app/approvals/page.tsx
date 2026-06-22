@@ -31,6 +31,7 @@ type PipelineState = {
 type IncidentRecord = PipelineState & {
   id: string;
   created_at: string;
+  resolved_at?: string;
   status: IncidentStatus;
 };
 
@@ -96,7 +97,10 @@ export default function ApprovalsPage() {
     try {
       const all: IncidentRecord[] = JSON.parse(allStored);
       const updated = all.map((incident) =>
-        incident.id === id ? { ...incident, status: newStatus } : incident
+        incident.id === id ? { ...incident, status: newStatus,
+          resolved_at: new Date().toISOString(),
+        }
+        : incident
       );
 
       localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
