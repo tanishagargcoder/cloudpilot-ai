@@ -90,7 +90,7 @@ def get_services_health():
     try:
         lambda_client = boto3.client(
             "lambda",
-            region_name=os.getenv("AWS_REGION")
+            region_name=os.getenv("AWS_REGION", "ap-south-1")
         )
 
         lambda_client.list_functions(MaxItems=1)
