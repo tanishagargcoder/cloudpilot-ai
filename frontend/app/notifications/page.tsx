@@ -88,9 +88,11 @@ export default function NotificationsPage() {
     load();
     const interval = setInterval(load, 1000);
     window.addEventListener("storage", load);
+    window.addEventListener("notifications-updated", load);
     return () => {
       clearInterval(interval);
       window.removeEventListener("storage", load);
+      window.removeEventListener("notifications-updated", load);
     };
   }, [load]);
 

@@ -35,15 +35,33 @@ export default function ApprovalsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+  const load = () => {
     const stored = localStorage.getItem("cloudpilot_incidents");
+
     if (stored) {
       try {
         const parsed: IncidentRecord[] = JSON.parse(stored);
         setIncidents(parsed.filter((i) => i.status === "needs_approval"));
-      } catch { setIncidents([]); }
+      } catch {
+        setIncidents([]);
+      }
+    } else {
+      setIncidents([]);
     }
+
     setLoading(false);
-  }, []);
+  };
+
+  load();
+
+  window.addEventListener("storage", load);
+  window.addEventListener("incidents-updated", load);
+
+  return () => {
+    window.removeEventListener("storage", load);
+    window.removeEventListener("incidents-updated", load);
+  };
+}, []);
 
   const updateStatus = (id: string, newStatus: "approved" | "rejected") => {
     try {
@@ -51,8 +69,14 @@ export default function ApprovalsPage() {
       const updated = all.map((i) =>
         i.id === id ? { ...i, status: newStatus, resolved_at: new Date().toISOString() } : i
       );
-      localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
-      setIncidents((prev) => prev.filter((i) => i.id !== id));
+      localStorage.setItem(
+  "cloudpilot_incidents",
+  JSON.stringify(updated)
+);
+
+window.dispatchEvent(new Event("incidents-updated"));
+
+setIncidents((prev) => prev.filter((i) => i.id !== id));
     } catch {}
   };
 

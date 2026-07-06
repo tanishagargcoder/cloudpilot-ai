@@ -25,7 +25,10 @@ function NotificationBadge() {
     check();
     const iv = setInterval(check, 2000);
     window.addEventListener("storage", check);
-    return () => { clearInterval(iv); window.removeEventListener("storage", check); };
+    window.addEventListener("notifications-updated", check);
+    return () => { clearInterval(iv); window.removeEventListener("storage", check);
+      window.removeEventListener("notifications-updated", check);
+     };
   }, []);
   if (count === 0) return null;
   return (
@@ -245,6 +248,8 @@ export default function Dashboard() {
         const existing = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
         const updated = [incident, ...existing].slice(0, 10);
         localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("incidents-updated"));
         setIncidents(updated);
         // Save notification
         const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
@@ -258,6 +263,8 @@ export default function Dashboard() {
           type: incident.status === "needs_approval" ? "approval" : "incident",
         });
         localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
+        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("notifications-updated"));
       }
     };
     return () => ws.close();
