@@ -79,7 +79,7 @@ def get_services_health():
         }
 
     try:
-        cloudwatch.list_metrics(MaxRecords=1)
+        cloudwatch.list_metrics
         services["cloudwatch"] = {"status": "healthy"}
     except Exception as e:
         services["cloudwatch"] = {
