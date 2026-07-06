@@ -193,6 +193,7 @@ export default function Dashboard() {
   const [cpuData, setCpuData]     = useState<{ time: string; usage: number }[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
   const wsRef   = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -223,7 +224,9 @@ export default function Dashboard() {
 
   // ── WebSocket ────────────────────────────────────────────────────────────
   useEffect(() => {
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/events");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const wsUrl = apiUrl.replace("https://", "wss://").replace("http://", "ws://");
+    const ws = new WebSocket(`${wsUrl}/ws/events`);
     wsRef.current = ws;
     ws.onopen  = () => setConnected(true);
     ws.onclose = () => setConnected(false);
