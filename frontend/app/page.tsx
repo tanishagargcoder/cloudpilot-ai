@@ -7,33 +7,10 @@ import {
 } from "recharts";
 import {
   AlertTriangle, CheckCircle, Bot, Lightbulb, Activity,
-  Search, Pause, Play, Zap, Info, CheckCircle2,
-  RefreshCw, Hash, Clock, Bell, Settings,
+  Pause, Play, Zap, Info, CheckCircle2,
+  RefreshCw, Hash, Clock,
 } from "lucide-react";
 import Link from "next/link";
-
-// ── Notification Badge ───────────────────────────────────────────────────────
-function NotificationBadge() {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const check = () => {
-      try {
-        const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
-        setCount(notifs.filter((n: any) => !n.read).length);
-      } catch { setCount(0); }
-    };
-    check();
-    const iv = setInterval(check, 2000);
-    window.addEventListener("storage", check);
-    return () => { clearInterval(iv); window.removeEventListener("storage", check); };
-  }, []);
-  if (count === 0) return null;
-  return (
-    <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-      {count > 99 ? "99+" : count}
-    </span>
-  );
-}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type PipelineState = {
@@ -54,7 +31,7 @@ type AgentEvent = {
   agent?: string;
   result?: Record<string, unknown>;
   message?: string;
-  final_state?: PipelineState;
+  final_state?: PipelineState & { id?: string; created_at?: string; status?: string };
 };
 type AgentStatus = {
   id: string; name: string;
@@ -62,12 +39,14 @@ type AgentStatus = {
   lastSeen: string; tasks: number;
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
 // ── Mock data ────────────────────────────────────────────────────────────────
 const mockAgents: AgentStatus[] = [
-  { id: "agent-1", name: "Monitoring Agent",   status: "running", lastSeen: "2s ago",  tasks: 142 },
-  { id: "agent-2", name: "Analysis Agent",     status: "running", lastSeen: "5s ago",  tasks: 89  },
-  { id: "agent-3", name: "Report Agent",       status: "idle",    lastSeen: "1m ago",  tasks: 34  },
-  { id: "agent-4", name: "Remediation Agent",  status: "running", lastSeen: "3s ago",  tasks: 67  },
+  { id: "agent-1", name: "Monitoring Agent",    status: "running", lastSeen: "2s ago",  tasks: 142 },
+  { id: "agent-2", name: "Analysis Agent",      status: "running", lastSeen: "5s ago",  tasks: 89  },
+  { id: "agent-3", name: "Report Agent",        status: "idle",    lastSeen: "1m ago",  tasks: 34  },
+  { id: "agent-4", name: "Remediation Agent",   status: "running", lastSeen: "3s ago",  tasks: 67  },
 ];
 const memoryData = [
   { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 }, { time: "04:00", usage: 61 },
@@ -90,7 +69,7 @@ const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info 
   success: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle2  },
 };
 
-// ── Helper components ────────────────────────────────────────────────────────
+// ── Helper components ─────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -117,36 +96,21 @@ function CardContent({ children, className = "" }: { children: React.ReactNode; 
   return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
 }
 
-// ── Slack Activity Feed ──────────────────────────────────────────────────────
-function SlackActivityFeed() {
-  const [activities, setActivities] = useState<{ time: string; label: string; color: string }[]>([]);
-  useEffect(() => {
-    const load = () => {
-      try {
-        const incidents: IncidentRecord[] = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
-        const items = incidents.slice(0, 5).flatMap((inc) => {
-          const base = new Date(inc.created_at);
-          const fmt = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-          const rows = [
-            { time: fmt(base), label: "Incident Created", color: "bg-red-500" },
-            { time: fmt(new Date(base.getTime() + 60000)), label: "RCA Generated", color: "bg-amber-500" },
-            { time: fmt(new Date(base.getTime() + 120000)), label: "Fix Plan Ready", color: "bg-blue-500" },
-          ];
-          if (inc.status === "approved")
-            rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓", color: "bg-emerald-500" });
-          else if (inc.status === "rejected")
-            rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected", color: "bg-red-500" });
-          else if (inc.status === "needs_approval")
-            rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested", color: "bg-amber-400" });
-          return rows;
-        });
-        setActivities(items.slice(0, 10));
-      } catch { setActivities([]); }
-    };
-    load();
-    const iv = setInterval(load, 3000);
-    return () => clearInterval(iv);
-  }, []);
+// ── Slack Activity Feed ───────────────────────────────────────────────────────
+function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
+  const activities = incidents.slice(0, 5).flatMap((inc) => {
+    const base = new Date(inc.created_at);
+    const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    const rows = [
+      { time: fmt(base),                                  label: "Incident Created",    color: "bg-red-500"     },
+      { time: fmt(new Date(base.getTime() + 60000)),      label: "RCA Generated",       color: "bg-amber-500"   },
+      { time: fmt(new Date(base.getTime() + 120000)),     label: "Fix Plan Ready",      color: "bg-blue-500"    },
+    ];
+    if (inc.status === "approved")       rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓",      color: "bg-emerald-500" });
+    else if (inc.status === "rejected")  rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected",        color: "bg-red-500"     });
+    else if (inc.status === "needs_approval") rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested",  color: "bg-amber-400"   });
+    return rows;
+  }).slice(0, 10);
 
   return (
     <Card>
@@ -175,49 +139,38 @@ function SlackActivityFeed() {
   );
 }
 
-// ── Save incident helper ─────────────────────────────────────────────────────
-function saveIncident(data: PipelineState, setIncidents: (fn: (prev: IncidentRecord[]) => IncidentRecord[]) => void) {
-  const incident: IncidentRecord = {
-    ...data,
-    id: `incident-${Date.now()}`,
-    created_at: new Date().toISOString(),
-    status: data.requires_approval ? "needs_approval" : "healthy",
-  };
-  localStorage.setItem("cloudpilot_latest_incident", JSON.stringify(incident));
-  const existing = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
-  const updated = [incident, ...existing].slice(0, 10);
-  localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
-  setIncidents(() => updated);
-
-  const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
-  notifs.unshift({
-    id: `notif-${Date.now()}`,
-    title: incident.status === "needs_approval" ? "Approval Required" : "New Incident Created",
-    message: `${incident.id} detected`,
-    severity: incident.status === "needs_approval" ? "warning" : "critical",
-    time: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
-    read: false,
-    type: incident.status === "needs_approval" ? "approval" : "incident",
-  });
-  localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
-  return incident;
-}
-
-// ── Main Dashboard ───────────────────────────────────────────────────────────
+// ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [events, setEvents]         = useState<AgentEvent[]>([]);
-  const [running, setRunning]       = useState(false);
-  const [connected, setConnected]   = useState(false);
-  const [incidents, setIncidents]   = useState<IncidentRecord[]>([]);
-  const [cpuData, setCpuData]       = useState<{ time: string; usage: number }[]>([]);
+  const [events, setEvents]           = useState<AgentEvent[]>([]);
+  const [running, setRunning]         = useState(false);
+  const [connected, setConnected]     = useState(false);
+  const [incidents, setIncidents]     = useState<IncidentRecord[]>([]);
+  const [cpuData, setCpuData]         = useState<{ time: string; usage: number }[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const wsRef   = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  // ── Fetch incidents from MongoDB ────────────────────────────────────────────
+  const fetchIncidents = useCallback(async () => {
+    try {
+      const res  = await fetch(`${API_URL}/incidents`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setIncidents(data);
+        localStorage.setItem("cloudpilot_incidents", JSON.stringify(data));
+      } else {
+        // fallback localStorage
+        const stored = localStorage.getItem("cloudpilot_incidents");
+        if (stored) { try { setIncidents(JSON.parse(stored)); } catch {} }
+      }
+    } catch {
+      const stored = localStorage.getItem("cloudpilot_incidents");
+      if (stored) { try { setIncidents(JSON.parse(stored)); } catch {} }
+    }
+  }, []);
 
-  // ── Fetch CPU ──────────────────────────────────────────────────────────────
+  // ── Fetch CPU ───────────────────────────────────────────────────────────────
   const fetchCpu = useCallback(() => {
     fetch(`${API_URL}/metrics/ec2-cpu`)
       .then((r) => r.json())
@@ -232,16 +185,17 @@ export default function Dashboard() {
         setLastUpdated(new Date());
       })
       .catch(() => {});
-  }, [API_URL]);
+  }, []);
+
+  useEffect(() => { fetchCpu(); fetchIncidents(); }, []);
 
   useEffect(() => {
-    fetchCpu();
     if (!autoRefresh) return;
-    const iv = setInterval(fetchCpu, 60000);
+    const iv = setInterval(() => { fetchCpu(); fetchIncidents(); }, 30000);
     return () => clearInterval(iv);
-  }, [fetchCpu, autoRefresh]);
+  }, [autoRefresh, fetchCpu, fetchIncidents]);
 
-  // ── WebSocket with fallback ────────────────────────────────────────────────
+  // ── WebSocket ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const wsUrl = API_URL.replace("https://", "wss://").replace("http://", "ws://");
     let ws: WebSocket;
@@ -252,64 +206,50 @@ export default function Dashboard() {
       wsRef.current = ws;
 
       timeout = setTimeout(() => {
-        if (ws.readyState !== WebSocket.OPEN) {
-          ws.close();
-          setConnected(false);
-        }
+        if (ws.readyState !== WebSocket.OPEN) { ws.close(); setConnected(false); }
       }, 5000);
 
-      ws.onopen = () => { setConnected(true); clearTimeout(timeout); };
+      ws.onopen  = () => { setConnected(true); clearTimeout(timeout); };
       ws.onclose = () => setConnected(false);
       ws.onerror = () => { setConnected(false); clearTimeout(timeout); };
 
       ws.onmessage = (e) => {
         const data: AgentEvent = JSON.parse(e.data);
         setEvents((prev) => [...prev, data]);
-        if (data.event === "pipeline_complete" && data.final_state) {
+        if (data.event === "pipeline_complete") {
           setRunning(false);
-          saveIncident(data.final_state, setIncidents);
+          // Refresh incidents from MongoDB
+          setTimeout(() => fetchIncidents(), 1000);
         }
       };
-    } catch {
-      setConnected(false);
-    }
+    } catch { setConnected(false); }
 
-    return () => {
-      clearTimeout(timeout!);
-      ws?.close();
-    };
-  }, [API_URL]);
+    return () => { clearTimeout(timeout!); ws?.close(); };
+  }, [fetchIncidents]);
 
-  // ── Load incidents ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    const stored = localStorage.getItem("cloudpilot_incidents");
-    if (stored) { try { setIncidents(JSON.parse(stored)); } catch { setIncidents([]); } }
-  }, []);
-
-  // ── Auto-scroll feed ───────────────────────────────────────────────────────
+  // ── Auto-scroll ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
   }, [events]);
 
-  // ── Run agent — WebSocket first, then REST fallback ────────────────────────
+  // ── Run Agent ───────────────────────────────────────────────────────────────
   const runAgent = async () => {
     if (running) return;
     setEvents([]);
     setRunning(true);
 
-    // Try WebSocket
+    // Try WebSocket first
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send("run_agent");
       return;
     }
 
-    // REST API fallback (for Render / when WebSocket not available)
+    // REST fallback — backend saves to MongoDB
     try {
-      setEvents([
-        { event: "agent_start",    agent: "anomaly_detector" },
-      ]);
+      setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
+
       const response = await fetch(`${API_URL}/run-agent`, { method: "POST" });
-      const data = await response.json();
+      const data     = await response.json();
 
       setEvents([
         { event: "agent_complete", agent: "anomaly_detector", result: { anomalies: data.anomalies } },
@@ -319,10 +259,26 @@ export default function Dashboard() {
         { event: "pipeline_complete", final_state: data },
       ]);
 
-      saveIncident(data, setIncidents);
       setConnected(true);
+
+      // ── Fetch fresh incidents from MongoDB after save ──
+      await fetchIncidents();
+
+      // ── Save notification ──
+      const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
+      notifs.unshift({
+        id: `notif-${Date.now()}`,
+        title: data.requires_approval ? "Approval Required" : "New Incident Created",
+        message: `${data.id} detected`,
+        severity: data.requires_approval ? "warning" : "critical",
+        time: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
+        read: false,
+        type: data.requires_approval ? "approval" : "incident",
+      });
+      localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
+
     } catch {
-      setEvents([{ event: "error", message: "❌ Could not connect to backend. Is it running?" }]);
+      setEvents([{ event: "error", message: "❌ Could not connect to backend." }]);
     } finally {
       setRunning(false);
     }
@@ -361,10 +317,11 @@ export default function Dashboard() {
     rejected:       "bg-red-400/10 text-red-400",
   };
 
+  const pendingCount      = incidents.filter((i) => i.status === "needs_approval").length;
   const activeIncidents   = incidents.length;
-  const aiRecommendations = incidents.filter((i) => i.requires_approval).length;
+  const aiRecommendations = pendingCount;
   const runningAgents     = mockAgents.filter((a) => a.status === "running").length;
-  const healthyServices   = Math.max(0, 24 - incidents.length);
+  const healthyServices   = Math.max(0, 24 - activeIncidents);
 
   const kpiConfig = [
     { title: "Active Incidents",   value: activeIncidents,   icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
@@ -376,7 +333,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <main className="p-4 lg:p-8 space-y-6">
-        {/* Title */}
         <div>
           <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
           <p className="text-slate-500 mt-1">Real-time AWS monitoring and AI remediation</p>
@@ -395,22 +351,17 @@ export default function Dashboard() {
               <Clock className="h-3.5 w-3.5" />
               Last updated: {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
             </div>
-            <button
-              onClick={() => setAutoRefresh((p) => !p)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${autoRefresh ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-900 text-slate-500 border-slate-800"}`}
-            >
+            <button onClick={() => setAutoRefresh((p) => !p)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${autoRefresh ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-900 text-slate-500 border-slate-800"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? "bg-emerald-500 animate-pulse" : "bg-slate-600"}`} />
               Auto Refresh
             </button>
-            <button onClick={fetchCpu} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh Now
+            <button onClick={() => { fetchCpu(); fetchIncidents(); }}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
+              <RefreshCw className="h-3.5 w-3.5" />Refresh Now
             </button>
-            <button
-              onClick={runAgent}
-              disabled={running}
-              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}
-            >
+            <button onClick={runAgent} disabled={running}
+              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}>
               {running ? "⏳ Running..." : "🚀 Run Agent Pipeline"}
             </button>
           </div>
@@ -553,8 +504,8 @@ export default function Dashboard() {
                 )}
                 {events.map((ev, i) => {
                   const evType = getEventType(ev.event);
-                  const cfg = typeConfig[evType] || typeConfig.info;
-                  const Icon = cfg.icon;
+                  const cfg    = typeConfig[evType] || typeConfig.info;
+                  const Icon   = cfg.icon;
                   return (
                     <div key={i} className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
                       <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${cfg.bg}`}>
@@ -581,7 +532,7 @@ export default function Dashboard() {
 
         {/* Slack Feed + Recent Incidents */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <SlackActivityFeed />
+          <SlackActivityFeed incidents={incidents} />
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm">Recent Incidents</CardTitle>
@@ -635,8 +586,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               { label: "Anomalies Found", value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0, color: "text-red-400" },
-              { label: "Root Cause",      value: "Generated ✓",       color: "text-blue-400"    },
-              { label: "Fix Plan",        value: "Ready for review",   color: "text-emerald-400" },
+              { label: "Root Cause",      value: "Generated ✓",      color: "text-blue-400"    },
+              { label: "Fix Plan",        value: "Ready for review",  color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
               <Card key={label}>
                 <CardContent className="pt-6">
