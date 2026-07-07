@@ -177,7 +177,9 @@ def get_all_notifications():
 @app.get("/ping")
 def ping():
     return {"pong": True}
-
+@app.get("/")
+def root():
+    return {"message": "CloudPilot AI Backend", "status": "running", "docs": "/docs"}
 @app.websocket("/ws/events")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

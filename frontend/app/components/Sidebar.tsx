@@ -8,7 +8,7 @@ import {
   BarChart3, Cloud, Bell, Settings, Server,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
 const navItems = [
   { label: "Dashboard",  href: "/",          icon: LayoutDashboard },

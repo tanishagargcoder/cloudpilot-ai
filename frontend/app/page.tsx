@@ -1,5 +1,5 @@
 "use client";
-
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -38,8 +38,6 @@ type AgentStatus = {
   status: "running" | "idle" | "error";
   lastSeen: string; tasks: number;
 };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const mockAgents: AgentStatus[] = [

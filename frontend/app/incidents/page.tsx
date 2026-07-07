@@ -22,7 +22,7 @@ type IncidentRecord = {
   requires_approval: boolean;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
 const statusConfig: Record<IncidentStatus, { color: string; bg: string; label: string; icon: typeof Activity; border: string }> = {
   healthy:       { color: "text-emerald-400", bg: "bg-emerald-400/10", label: "healthy",      icon: CheckCircle,  border: "border-emerald-400/30" },

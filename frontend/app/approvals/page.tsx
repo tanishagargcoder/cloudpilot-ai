@@ -21,7 +21,7 @@ type IncidentRecord = {
   requires_approval: boolean;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
 const severityConfig = {
   critical: { color: "text-red-400",   bg: "bg-red-400/10",   label: "critical" },
