@@ -188,8 +188,8 @@ export default function IncidentsPage() {
     new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <main className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="text-slate-100">
+      <main className="max-w-7xl mx-auto space-y-6">
         <div>
           <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
             <ChevronLeft className="h-4 w-4" /> Dashboard

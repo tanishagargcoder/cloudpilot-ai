@@ -118,6 +118,30 @@ export function AIChatbot() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isLoading]);
 
+  // ── Local fallback answers (works without any API key) ──────────────────
+  const getLocalAnswer = (q: string): string => {
+    const incidents = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
+    const pending = incidents.filter((i: any) => i.status === "needs_approval");
+    const lower = q.toLowerCase();
+
+    if (lower.includes("status") || lower.includes("health") || lower.includes("system")) {
+      return `**System Status** 📊\n\n• Total incidents: **${incidents.length}**\n• Pending approvals: **${pending.length}**\n• Monitoring: **Active** (EC2 CPU via CloudWatch)\n\n${pending.length > 0 ? "⚠️ You have approvals waiting — check the Approvals page." : "✅ Nothing needs your attention right now."}`;
+    }
+    if (lower.includes("incident")) {
+      if (incidents.length === 0) return "No incidents recorded yet. Click **Run Agent Pipeline** on the dashboard to scan for anomalies.";
+      const recent = incidents.slice(0, 3).map((i: any, idx: number) =>
+        `${idx + 1}. [${i.status}] ${(i.root_cause || "Analyzing...").replace(/\*\*/g, "").slice(0, 80)}`
+      ).join("\n");
+      return `**Recent Incidents** (${incidents.length} total)\n\n${recent}\n\nSee the Incidents page for full details.`;
+    }
+    if (lower.includes("approval") || lower.includes("pending")) {
+      return pending.length === 0
+        ? "✅ No pending approvals — you're all caught up!"
+        : `⚠️ **${pending.length} approval${pending.length > 1 ? "s" : ""} pending.** Head to the Approvals page to review the AI-generated fix plans.`;
+    }
+    return "I can answer questions about your **system status**, **incidents**, and **approvals** right now.\n\nFor full AI answers (DevOps, cloud, anything!), add a `NEXT_PUBLIC_GEMINI_API_KEY` in your environment settings.";
+  };
+
   // ── Gemini API call (free tier) ──────────────────────────────────────────
   const callGemini = async (userMessage: string): Promise<string> => {
     const incidents = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
@@ -198,16 +222,22 @@ User question: ${userMessage}`;
         setIsSpeaking(true);
         speak(reply, () => setIsSpeaking(false));
       }
-    } catch (err: any) {
+    } catch {
+      // Gemini unavailable → answer from live dashboard data instead of erroring
+      const fallback = getLocalAnswer(trimmed);
       setMessages((prev) => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
+          id: `bot-${Date.now()}`,
           role: "assistant",
-          content: `⚠️ ${err?.message || "Couldn't reach Gemini AI. Check your NEXT_PUBLIC_GEMINI_API_KEY in .env.local and restart the dev server."}`,
+          content: fallback,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
+      if (fromVoice && voiceMode === "voice-and-text") {
+        setIsSpeaking(true);
+        speak(fallback, () => setIsSpeaking(false));
+      }
     } finally {
       setIsLoading(false);
     }

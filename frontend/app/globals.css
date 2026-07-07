@@ -86,18 +86,10 @@
   color: inherit !important; 
 }
 
+/* Base — font comes from next/font (Inter) applied in layout.tsx */
 body {
   background: var(--background);
   color: var(--foreground);
-  transition: background-color 0.25s ease, color 0.25s ease;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Base */
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
   transition:
     background-color 0.25s ease,
     color 0.25s ease;

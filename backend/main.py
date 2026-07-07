@@ -19,8 +19,7 @@ app = FastAPI(title="CloudPilot AI - DevOps Assistant")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000",
-    "https://cloudpilot-ai-three.vercel.app",
-    "*"],
+    "https://cloudpilot-ai-three.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

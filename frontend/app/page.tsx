@@ -40,12 +40,15 @@ type AgentStatus = {
   lastSeen: string; tasks: number;
 };
 
-const mockAgents: AgentStatus[] = [
-  { id: "1", name: "Monitoring Agent",   status: "running", lastSeen: "2s ago",  tasks: 142 },
-  { id: "2", name: "Analysis Agent",     status: "running", lastSeen: "5s ago",  tasks: 89  },
-  { id: "3", name: "Report Agent",       status: "idle",    lastSeen: "1m ago",  tasks: 34  },
-  { id: "4", name: "Remediation Agent",  status: "running", lastSeen: "3s ago",  tasks: 67  },
-];
+function timeAgo(iso?: string) {
+  if (!iso) return "never";
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 const memoryData = [
   { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 }, { time: "04:00", usage: 61 },
   { time: "06:00", usage: 68 }, { time: "08:00", usage: 75 }, { time: "10:00", usage: 78 }, { time: "12:00", usage: 76 },
@@ -317,22 +320,32 @@ export default function Dashboard() {
 
   const pendingCount    = incidents.filter((i) => i.status === "needs_approval").length;
   const activeIncidents = incidents.length;
-  const runningAgents   = mockAgents.filter((a) => a.status === "running").length;
   const healthyServices = Math.max(0, 24 - activeIncidents);
+
+  // Real agent status derived from actual pipeline runs (no mock data)
+  const lastRun = incidents[0]?.created_at;
+  const agentSeen = running ? "just now" : timeAgo(lastRun);
+  const agents: AgentStatus[] = [
+    { id: "1", name: "Monitoring Agent",  status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.length },
+    { id: "2", name: "Analysis Agent",    status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.filter((i) => i.root_cause).length },
+    { id: "3", name: "Remediation Agent", status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.filter((i) => i.fix_plan).length },
+    { id: "4", name: "Report Agent",      status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.filter((i) => i.report).length },
+  ];
+  const runningAgents = running ? agents.length : 0;
 
   const kpiConfig = [
     { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
     { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime` },
-    { title: "Running Agents",     value: runningAgents,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: `${runningAgents}/${mockAgents.length} active` },
+    { title: "AI Agents",          value: agents.length,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: running ? `${runningAgents}/${agents.length} running now` : `idle · last run ${agentSeen}` },
     { title: "AI Recommendations", value: pendingCount,    icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${pendingCount} pending review` },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <main className="p-4 lg:p-8 space-y-6">
+    <div className="text-slate-100">
+      <main className="max-w-7xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Real-time AWS monitoring and AI remediation</p>
+          <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">Real-time AWS monitoring and AI-powered remediation</p>
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -366,10 +379,12 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {kpiConfig.map((kpi) => (
-            <Card key={kpi.title} className={kpi.borderColor}>
+            <Card key={kpi.title} className={`${kpi.borderColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/20`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-300">{kpi.title}</CardTitle>
-                <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${kpi.color.replace("text-", "bg-").replace("400", "400/10")}`}>
+                  <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-slate-100">{kpi.value}</div>
@@ -457,7 +472,7 @@ export default function Dashboard() {
           <Card className="lg:col-span-1">
             <CardHeader><CardTitle className="text-base">Agent Status</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              {mockAgents.map((agent) => {
+              {agents.map((agent) => {
                 const cfg  = statusConfig[agent.status] || statusConfig.idle;
                 const Icon = cfg.icon;
                 return (

@@ -8,7 +8,10 @@ import {
   Zap,
   CheckCircle,
   XCircle,
+  ChevronLeft,
 } from "lucide-react";
+
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
 type ServiceHealth = {
   status: string;
@@ -19,7 +22,7 @@ export default function ServicesPage() {
   const [services, setServices] = useState<Record<string, ServiceHealth>>({});
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/services/health`)
+    fetch(`${API_URL}/services/health`)
       .then((r) => r.json())
       .then(setServices)
       .catch(console.error);
@@ -61,12 +64,15 @@ export default function ServicesPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-100">
+        <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
+          <ChevronLeft className="h-4 w-4" /> Dashboard
+        </a>
+        <h1 className="text-2xl font-bold text-slate-100">
           Service Health
         </h1>
-        <p className="text-slate-500 mt-1">
+        <p className="text-sm text-slate-500 mt-1">
           Real-time AWS infrastructure status
         </p>
       </div>

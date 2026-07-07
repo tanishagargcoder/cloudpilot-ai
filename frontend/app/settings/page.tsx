@@ -121,7 +121,7 @@ export default function SettingsPage() {
   const isDark = theme === "dark";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -130,8 +130,8 @@ export default function SettingsPage() {
             Back to Dashboard
           </a>
         </div>
-        <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Settings</h1>
-        <p className="text-slate-500 mt-2">Configure monitoring thresholds, AI parameters, and platform preferences</p>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Settings</h1>
+        <p className="text-sm text-slate-500 mt-1">Configure monitoring thresholds, AI parameters, and platform preferences</p>
       </div>
 
       {/* Monitoring */}
