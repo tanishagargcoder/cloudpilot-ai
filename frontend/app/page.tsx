@@ -1,5 +1,5 @@
 "use client";
-const API_URL = "https://cloudpilot-ai-backend.onrender.com";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -11,6 +11,9 @@ import {
   RefreshCw, Hash, Clock,
 } from "lucide-react";
 import Link from "next/link";
+
+// ── HARDCODED API URL ─────────────────────────────────────────────────────────
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PipelineState = {
@@ -41,19 +44,23 @@ type AgentStatus = {
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const mockAgents: AgentStatus[] = [
-  { id: "1", name: "Monitoring Agent",   status: "running", lastSeen: "2s ago",  tasks: 142 },
-  { id: "2", name: "Analysis Agent",     status: "running", lastSeen: "5s ago",  tasks: 89  },
-  { id: "3", name: "Report Agent",       status: "idle",    lastSeen: "1m ago",  tasks: 34  },
-  { id: "4", name: "Remediation Agent",  status: "running", lastSeen: "3s ago",  tasks: 67  },
+  { id: "1", name: "Monitoring Agent",  status: "running", lastSeen: "2s ago", tasks: 142 },
+  { id: "2", name: "Analysis Agent",    status: "running", lastSeen: "5s ago", tasks: 89  },
+  { id: "3", name: "Report Agent",      status: "idle",    lastSeen: "1m ago", tasks: 34  },
+  { id: "4", name: "Remediation Agent", status: "running", lastSeen: "3s ago", tasks: 67  },
 ];
 const memoryData = [
   { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 }, { time: "04:00", usage: 61 },
-  { time: "06:00", usage: 68 }, { time: "08:00", usage: 75 }, { time: "10:00", usage: 78 }, { time: "12:00", usage: 76 },
+  { time: "06:00", usage: 68 }, { time: "08:00", usage: 75 }, { time: "10:00", usage: 78 },
+  { time: "12:00", usage: 76 },
 ];
 const networkData = [
-  { time: "00:00", inbound: 120, outbound: 80  }, { time: "02:00", inbound: 150, outbound: 95  },
-  { time: "04:00", inbound: 110, outbound: 70  }, { time: "06:00", inbound: 200, outbound: 140 },
-  { time: "08:00", inbound: 350, outbound: 220 }, { time: "10:00", inbound: 420, outbound: 280 },
+  { time: "00:00", inbound: 120, outbound: 80  },
+  { time: "02:00", inbound: 150, outbound: 95  },
+  { time: "04:00", inbound: 110, outbound: 70  },
+  { time: "06:00", inbound: 200, outbound: 140 },
+  { time: "08:00", inbound: 350, outbound: 220 },
+  { time: "10:00", inbound: 420, outbound: 280 },
   { time: "12:00", inbound: 380, outbound: 250 },
 ];
 const statusConfig: Record<string, { color: string; bg: string; icon: typeof Play }> = {
@@ -68,7 +75,7 @@ const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info 
   success: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle2  },
 };
 
-// ── Components ────────────────────────────────────────────────────────────────
+// ── Helper Components ─────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -100,12 +107,12 @@ function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
     const base = new Date(inc.created_at);
     const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
     const rows = [
-      { time: fmt(base),                                  label: "Incident Created",   color: "bg-red-500"     },
-      { time: fmt(new Date(base.getTime() + 60000)),      label: "RCA Generated",      color: "bg-amber-500"   },
-      { time: fmt(new Date(base.getTime() + 120000)),     label: "Fix Plan Ready",     color: "bg-blue-500"    },
+      { time: fmt(base),                                   label: "Incident Created",    color: "bg-red-500"     },
+      { time: fmt(new Date(base.getTime() + 60000)),       label: "RCA Generated",       color: "bg-amber-500"   },
+      { time: fmt(new Date(base.getTime() + 120000)),      label: "Fix Plan Ready",      color: "bg-blue-500"    },
     ];
-    if (inc.status === "approved")           rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓",     color: "bg-emerald-500" });
-    else if (inc.status === "rejected")      rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected",       color: "bg-red-500"     });
+    if (inc.status === "approved")            rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓",     color: "bg-emerald-500" });
+    else if (inc.status === "rejected")       rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected",       color: "bg-red-500"     });
     else if (inc.status === "needs_approval") rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested", color: "bg-amber-400"   });
     return rows;
   }).slice(0, 10);
@@ -137,7 +144,7 @@ function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
   );
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+// ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [events, setEvents]           = useState<AgentEvent[]>([]);
   const [running, setRunning]         = useState(false);
@@ -146,7 +153,7 @@ export default function Dashboard() {
   const [cpuData, setCpuData]         = useState<{ time: string; usage: number }[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [runStatus, setRunStatus]     = useState<string>("");
+  const [runStatus, setRunStatus]     = useState("");
   const wsRef   = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
@@ -198,7 +205,9 @@ export default function Dashboard() {
     try {
       ws = new WebSocket(`${wsUrl}/ws/events`);
       wsRef.current = ws;
-      timeout = setTimeout(() => { if (ws.readyState !== WebSocket.OPEN) { ws.close(); setConnected(false); } }, 5000);
+      timeout = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) { ws.close(); setConnected(false); }
+      }, 5000);
       ws.onopen  = () => { setConnected(true); clearTimeout(timeout); };
       ws.onclose = () => setConnected(false);
       ws.onerror = () => { setConnected(false); clearTimeout(timeout); };
@@ -208,7 +217,7 @@ export default function Dashboard() {
         if (data.event === "pipeline_complete") {
           setRunning(false);
           setRunStatus("");
-          setTimeout(() => fetchIncidents(), 1500);
+          setTimeout(() => fetchIncidents(), 2000);
         }
       };
     } catch { setConnected(false); }
@@ -219,13 +228,12 @@ export default function Dashboard() {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
   }, [events]);
 
-  // ── Run Agent ─────────────────────────────────────────────────────────────
+  // ── Run Agent Pipeline ────────────────────────────────────────────────────
   const runAgent = async () => {
     if (running) return;
-    console.log("🚀 runAgent called, API_URL:", API_URL); // ADD THIS
     setEvents([]);
     setRunning(true);
-    setRunStatus("Starting...");
+    setRunStatus("Starting pipeline...");
 
     // Try WebSocket first
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -234,25 +242,25 @@ export default function Dashboard() {
       return;
     }
 
-    // REST fallback with 2 min timeout
+    // REST fallback
     try {
-      setRunStatus("Connecting to backend...");
+      setRunStatus("Calling backend API...");
       setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
 
       const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 180000);
+      const timeoutId  = setTimeout(() => controller.abort(), 180000); // 3 min
 
       const response = await fetch(`${API_URL}/run-agent`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
       const data = await response.json();
-      setRunStatus("Pipeline complete!");
 
+      setRunStatus("Pipeline complete! Refreshing...");
       setEvents([
         { event: "agent_complete", agent: "anomaly_detector", result: { anomalies: data.anomalies } },
         { event: "agent_complete", agent: "rca_agent",        result: { root_cause: data.root_cause } },
@@ -263,29 +271,30 @@ export default function Dashboard() {
 
       setConnected(true);
 
-      // Save notification
+      // Save notification to localStorage
       const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
       notifs.unshift({
-        id:       `notif-${Date.now()}`,
-        title:    data.requires_approval ? "Approval Required" : "New Incident Created",
-        message:  `${data.id} detected`,
-        severity: data.requires_approval ? "warning" : "critical",
-        time:     new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
-        read:     false,
-        type:     data.requires_approval ? "approval" : "incident",
+        id:         `notif-${Date.now()}`,
+        title:      data.requires_approval ? "Approval Required" : "New Incident Created",
+        message:    `${data.id} detected`,
+        severity:   data.requires_approval ? "warning" : "critical",
+        time:       new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
+        read:       false,
+        type:       data.requires_approval ? "approval" : "incident",
         created_at: new Date().toISOString(),
       });
       localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
 
-      // Wait then fetch fresh from MongoDB
+      // Fetch fresh incidents from MongoDB
       await new Promise((r) => setTimeout(r, 2000));
       await fetchIncidents();
+      setRunStatus("");
 
     } catch (err: any) {
       if (err?.name === "AbortError") {
-        setEvents([{ event: "error", message: "⏱️ Request timed out. Backend may be sleeping. Try again in 30 seconds." }]);
+        setEvents([{ event: "error", message: "⏱️ Timed out. Backend may be sleeping. Try again!" }]);
       } else {
-        setEvents([{ event: "error", message: `❌ Error: ${err?.message || "Could not connect to backend"}` }]);
+        setEvents([{ event: "error", message: `❌ Error: ${err?.message || "Unknown error"}` }]);
       }
       setRunStatus("");
     } finally {
@@ -332,10 +341,10 @@ export default function Dashboard() {
   const healthyServices = Math.max(0, 24 - activeIncidents);
 
   const kpiConfig = [
-    { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
+    { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open`              },
     { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime` },
     { title: "Running Agents",     value: runningAgents,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: `${runningAgents}/${mockAgents.length} active` },
-    { title: "AI Recommendations", value: pendingCount,    icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${pendingCount} pending review` },
+    { title: "AI Recommendations", value: pendingCount,    icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${pendingCount} pending review`       },
   ];
 
   return (
@@ -346,7 +355,7 @@ export default function Dashboard() {
           <p className="text-slate-500 mt-1">Real-time AWS monitoring and AI remediation</p>
         </div>
 
-        {/* Status + Controls */}
+        {/* Status Bar */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span className={`inline-flex h-2.5 w-2.5 rounded-full ${connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
@@ -358,7 +367,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <Clock className="h-3.5 w-3.5" />
-              Last updated: {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+              {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
             </div>
             <button onClick={() => setAutoRefresh((p) => !p)}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${autoRefresh ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-900 text-slate-500 border-slate-800"}`}>
@@ -367,11 +376,14 @@ export default function Dashboard() {
             </button>
             <button onClick={() => { fetchCpu(); fetchIncidents(); }}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
-              <RefreshCw className="h-3.5 w-3.5" />Refresh Now
+              <RefreshCw className="h-3.5 w-3.5" /> Refresh Now
             </button>
-            <button onClick={runAgent} disabled={running}
-              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}>
-              {running ? "⏳ Running..." : "🚀 Run Agent Pipeline"}
+            <button
+              onClick={runAgent}
+              disabled={running}
+              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}
+            >
+              {running ? `⏳ ${runStatus || "Running..."}` : "🚀 Run Agent Pipeline"}
             </button>
           </div>
         </div>
@@ -407,7 +419,7 @@ export default function Dashboard() {
                   <defs>
                     <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}   />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -419,6 +431,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader><CardTitle className="text-base">Memory Usage</CardTitle></CardHeader>
             <CardContent>
@@ -427,7 +440,7 @@ export default function Dashboard() {
                   <defs>
                     <linearGradient id="memGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}   />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -439,6 +452,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader><CardTitle className="text-base">Network Traffic</CardTitle></CardHeader>
             <CardContent>
@@ -447,11 +461,11 @@ export default function Dashboard() {
                   <defs>
                     <linearGradient id="inGrad"  x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#8b5cf6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}   />
                     </linearGradient>
                     <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}   />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -459,7 +473,7 @@ export default function Dashboard() {
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit=" Mbps" />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="inbound"  stroke="#8b5cf6" strokeWidth={2} fill="url(#inGrad)"  name="Inbound" />
+                  <Area type="monotone" dataKey="inbound"  stroke="#8b5cf6" strokeWidth={2} fill="url(#inGrad)"  name="Inbound"  />
                   <Area type="monotone" dataKey="outbound" stroke="#f59e0b" strokeWidth={2} fill="url(#outGrad)" name="Outbound" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -473,7 +487,7 @@ export default function Dashboard() {
             <CardHeader><CardTitle className="text-base">Agent Status</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               {mockAgents.map((agent) => {
-                const cfg = statusConfig[agent.status] || statusConfig.idle;
+                const cfg  = statusConfig[agent.status] || statusConfig.idle;
                 const Icon = cfg.icon;
                 return (
                   <div key={agent.id} className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/80 p-3 hover:border-slate-700 transition-colors">
@@ -594,7 +608,7 @@ export default function Dashboard() {
         {events.some((e) => e.event === "pipeline_complete") && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
-              { label: "Anomalies Found", value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0, color: "text-red-400" },
+              { label: "Anomalies Found", value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0, color: "text-red-400"    },
               { label: "Root Cause",      value: "Generated ✓",     color: "text-blue-400"    },
               { label: "Fix Plan",        value: "Ready for review", color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
