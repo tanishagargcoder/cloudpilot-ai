@@ -135,7 +135,7 @@ def run_agent():
     incident = {
         **state,
         "id": f"incident-{int(datetime.utcnow().timestamp() * 1000)}",
-        "created_at": datetime.utcnow().isoformat(),
+        ""created_at": datetime.now().isoformat(),
         "status": "needs_approval" if state["requires_approval"] else "healthy",
         "anomalies": state.get("anomalies", []),
     }
@@ -147,7 +147,7 @@ def run_agent():
         "title": "Approval Required" if state["requires_approval"] else "New Incident",
         "message": f"{incident['id']} detected",
         "severity": "warning" if state["requires_approval"] else "critical",
-        "time": datetime.utcnow().isoformat(),
+        "time": datetime.now().strftime("%d %b, %I:%M %p"),
         "read": False,
         "type": "approval" if state["requires_approval"] else "incident",
         "created_at": datetime.utcnow().isoformat(),
