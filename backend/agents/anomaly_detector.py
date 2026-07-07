@@ -8,9 +8,10 @@ cloudwatch = boto3.client("cloudwatch", region_name=os.getenv("AWS_REGION"))
 def detect_anomalies(state: AgentState) -> AgentState:
     """
     Checks EC2 CPU utilization over the last hour.
-    Flags an anomaly if average CPU > 70%.
+    Flags an anomaly if average CPU exceeds CPU_ANOMALY_THRESHOLD (default 70%).
     """
     instance_id = os.getenv("EC2_INSTANCE_ID")
+    threshold = float(os.getenv("CPU_ANOMALY_THRESHOLD", "70"))
 
     response = cloudwatch.get_metric_statistics(
         Namespace="AWS/EC2",
@@ -27,7 +28,7 @@ def detect_anomalies(state: AgentState) -> AgentState:
     anomalies = []
 
     for point in datapoints:
-        if point["Average"] > 0.15:
+        if point["Average"] > threshold:
             anomalies.append({
                 "metric": "CPUUtilization",
                 "value": point["Average"],

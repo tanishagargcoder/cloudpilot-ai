@@ -254,11 +254,11 @@ export default function Dashboard() {
   }, [events]);
 
   // ── REST ONLY - No WebSocket for pipeline ────────────────────────────────
-  const runAgent = async () => {
+  const runAgent = async (demo = false) => {
     if (running) return;
     setEvents([]);
     setRunning(true);
-    setRunStatus("Calling backend...");
+    setRunStatus(demo ? "Simulating incident..." : "Calling backend...");
 
     try {
       setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
@@ -266,7 +266,7 @@ export default function Dashboard() {
       const controller = new AbortController();
       const timeoutId  = setTimeout(() => controller.abort(), 180000);
 
-      const response = await fetch(`${API_URL}/run-agent`, {
+      const response = await fetch(`${API_URL}/run-agent${demo ? "?demo=true" : ""}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -352,6 +352,7 @@ export default function Dashboard() {
   };
 
   const pendingCount    = incidents.filter((i) => i.status === "needs_approval").length;
+  const recommendations = incidents.filter((i) => i.fix_plan && !i.fix_plan.startsWith("No fix needed")).length;
   const activeIncidents = incidents.length;
   const healthyServices = Math.max(0, 24 - activeIncidents);
 
@@ -367,10 +368,10 @@ export default function Dashboard() {
   const runningAgents = running ? agents.length : 0;
 
   const kpiConfig = [
-    { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
-    { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime` },
-    { title: "AI Agents",          value: agents.length,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: running ? `${runningAgents}/${agents.length} running now` : `idle · last run ${agentSeen}` },
-    { title: "AI Recommendations", value: pendingCount,    icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${pendingCount} pending review` },
+    { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open`, href: "/incidents" },
+    { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime`, href: "/services" },
+    { title: "AI Agents",          value: agents.length,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: running ? `${runningAgents}/${agents.length} running now` : `idle · last run ${agentSeen}`, href: null },
+    { title: "AI Recommendations", value: recommendations, icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: pendingCount > 0 ? `${pendingCount} pending review →` : "0 pending review", href: "/approvals" },
   ];
 
   return (
@@ -403,7 +404,12 @@ export default function Dashboard() {
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
               <RefreshCw className="h-3.5 w-3.5" /> Refresh Now
             </button>
-            <button onClick={runAgent} disabled={running}
+            <button onClick={() => runAgent(true)} disabled={running}
+              title="Injects a simulated CPU spike to demo the full RCA → Fix → Approval flow"
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors border ${running ? "cursor-not-allowed bg-slate-800 text-slate-500 border-slate-700" : "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"}`}>
+              🧪 Simulate Incident
+            </button>
+            <button onClick={() => runAgent(false)} disabled={running}
               className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}>
               {running ? `⏳ ${runStatus || "Running..."}` : "🚀 Run Agent Pipeline"}
             </button>
@@ -411,20 +417,25 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {kpiConfig.map((kpi) => (
-            <Card key={kpi.title} className={`${kpi.borderColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/20`}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-300">{kpi.title}</CardTitle>
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${kpi.color.replace("text-", "bg-").replace("400", "400/10")}`}>
-                  <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-100">{kpi.value}</div>
-                <p className="text-xs text-slate-400 mt-1">{kpi.trend}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {kpiConfig.map((kpi) => {
+            const card = (
+              <Card className={`${kpi.borderColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/20 ${kpi.href ? "cursor-pointer" : ""}`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-300">{kpi.title}</CardTitle>
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${kpi.color.replace("text-", "bg-").replace("400", "400/10")}`}>
+                    <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-100">{kpi.value}</div>
+                  <p className="text-xs text-slate-400 mt-1">{kpi.trend}</p>
+                </CardContent>
+              </Card>
+            );
+            return kpi.href
+              ? <Link key={kpi.title} href={kpi.href}>{card}</Link>
+              : <div key={kpi.title}>{card}</div>;
+          })}
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

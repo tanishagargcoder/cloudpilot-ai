@@ -162,7 +162,7 @@ def get_services_health():
 
 
 @app.post("/run-agent")
-def run_agent():
+def run_agent(demo: bool = False):
     state = {
         "metrics": {},
         "anomalies": [],
@@ -171,7 +171,32 @@ def run_agent():
         "report": None,
         "requires_approval": False,
     }
-    state = detect_anomalies(state)
+    if demo:
+        # Demo mode: inject a realistic CPU spike so the full
+        # RCA -> Fix -> Approval flow can be demonstrated on demand
+        now = datetime.utcnow()
+        instance_id = os.getenv("EC2_INSTANCE_ID", "i-demo000000000000")
+        state["anomalies"] = [
+            {
+                "metric": "CPUUtilization",
+                "value": 87.4,
+                "timestamp": str(now - timedelta(minutes=10)),
+                "resource": instance_id,
+            },
+            {
+                "metric": "CPUUtilization",
+                "value": 92.1,
+                "timestamp": str(now - timedelta(minutes=5)),
+                "resource": instance_id,
+            },
+        ]
+        state["metrics"] = {"datapoints": [
+            {"Average": 12.0, "Timestamp": str(now - timedelta(minutes=20))},
+            {"Average": 87.4, "Timestamp": str(now - timedelta(minutes=10))},
+            {"Average": 92.1, "Timestamp": str(now - timedelta(minutes=5))},
+        ], "demo": True}
+    else:
+        state = detect_anomalies(state)
     state = analyze_root_cause(state)
     state = generate_fix(state)
     state = write_report(state)
@@ -247,14 +272,25 @@ User question: {req.message}"""
 def get_all_incidents():
     return get_incidents(limit=20)
 
+def notify_slack(text: str):
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    if webhook_url:
+        try:
+            requests.post(webhook_url, json={"text": text}, timeout=10)
+        except Exception as e:
+            print(f"Slack notification failed: {e}")
+
+
 @app.post("/incidents/{incident_id}/approve")
 def approve_incident(incident_id: str):
     update_incident_status(incident_id, "approved")
+    notify_slack(f"✅ *Fix Approved & Deployed* — incident `{incident_id}` remediation was approved by a human operator.")
     return {"status": "approved"}
 
 @app.post("/incidents/{incident_id}/reject")
 def reject_incident(incident_id: str):
     update_incident_status(incident_id, "rejected")
+    notify_slack(f"❌ *Fix Rejected* — incident `{incident_id}` remediation was rejected by a human operator.")
     return {"status": "rejected"}
 
 @app.get("/notifications")
