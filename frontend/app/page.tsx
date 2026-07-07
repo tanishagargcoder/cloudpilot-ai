@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type PipelineState = {
   metrics: Record<string, unknown>;
   anomalies: unknown[];
@@ -41,12 +41,12 @@ type AgentStatus = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-// ── Mock data ────────────────────────────────────────────────────────────────
+// ── Mock data ─────────────────────────────────────────────────────────────────
 const mockAgents: AgentStatus[] = [
-  { id: "agent-1", name: "Monitoring Agent",    status: "running", lastSeen: "2s ago",  tasks: 142 },
-  { id: "agent-2", name: "Analysis Agent",      status: "running", lastSeen: "5s ago",  tasks: 89  },
-  { id: "agent-3", name: "Report Agent",        status: "idle",    lastSeen: "1m ago",  tasks: 34  },
-  { id: "agent-4", name: "Remediation Agent",   status: "running", lastSeen: "3s ago",  tasks: 67  },
+  { id: "1", name: "Monitoring Agent",   status: "running", lastSeen: "2s ago",  tasks: 142 },
+  { id: "2", name: "Analysis Agent",     status: "running", lastSeen: "5s ago",  tasks: 89  },
+  { id: "3", name: "Report Agent",       status: "idle",    lastSeen: "1m ago",  tasks: 34  },
+  { id: "4", name: "Remediation Agent",  status: "running", lastSeen: "3s ago",  tasks: 67  },
 ];
 const memoryData = [
   { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 }, { time: "04:00", usage: 61 },
@@ -55,11 +55,12 @@ const memoryData = [
 const networkData = [
   { time: "00:00", inbound: 120, outbound: 80  }, { time: "02:00", inbound: 150, outbound: 95  },
   { time: "04:00", inbound: 110, outbound: 70  }, { time: "06:00", inbound: 200, outbound: 140 },
-  { time: "08:00", inbound: 350, outbound: 220 }, { time: "10:00", inbound: 420, outbound: 280 }, { time: "12:00", inbound: 380, outbound: 250 },
+  { time: "08:00", inbound: 350, outbound: 220 }, { time: "10:00", inbound: 420, outbound: 280 },
+  { time: "12:00", inbound: 380, outbound: 250 },
 ];
 const statusConfig: Record<string, { color: string; bg: string; icon: typeof Play }> = {
-  running: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: Play  },
-  idle:    { color: "text-amber-400",   bg: "bg-amber-400/10",   icon: Pause },
+  running: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: Play     },
+  idle:    { color: "text-amber-400",   bg: "bg-amber-400/10",   icon: Pause    },
   error:   { color: "text-red-400",     bg: "bg-red-400/10",     icon: Activity },
 };
 const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info }> = {
@@ -69,7 +70,7 @@ const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info 
   success: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle2  },
 };
 
-// ── Helper components ─────────────────────────────────────────────────────────
+// ── Components ────────────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -96,19 +97,18 @@ function CardContent({ children, className = "" }: { children: React.ReactNode; 
   return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
 }
 
-// ── Slack Activity Feed ───────────────────────────────────────────────────────
 function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
   const activities = incidents.slice(0, 5).flatMap((inc) => {
     const base = new Date(inc.created_at);
     const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
     const rows = [
-      { time: fmt(base),                                  label: "Incident Created",    color: "bg-red-500"     },
-      { time: fmt(new Date(base.getTime() + 60000)),      label: "RCA Generated",       color: "bg-amber-500"   },
-      { time: fmt(new Date(base.getTime() + 120000)),     label: "Fix Plan Ready",      color: "bg-blue-500"    },
+      { time: fmt(base),                                  label: "Incident Created",   color: "bg-red-500"     },
+      { time: fmt(new Date(base.getTime() + 60000)),      label: "RCA Generated",      color: "bg-amber-500"   },
+      { time: fmt(new Date(base.getTime() + 120000)),     label: "Fix Plan Ready",     color: "bg-blue-500"    },
     ];
-    if (inc.status === "approved")       rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓",      color: "bg-emerald-500" });
-    else if (inc.status === "rejected")  rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected",        color: "bg-red-500"     });
-    else if (inc.status === "needs_approval") rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested",  color: "bg-amber-400"   });
+    if (inc.status === "approved")           rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓",     color: "bg-emerald-500" });
+    else if (inc.status === "rejected")      rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected",       color: "bg-red-500"     });
+    else if (inc.status === "needs_approval") rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested", color: "bg-amber-400"   });
     return rows;
   }).slice(0, 10);
 
@@ -139,7 +139,7 @@ function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
   );
 }
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [events, setEvents]           = useState<AgentEvent[]>([]);
   const [running, setRunning]         = useState(false);
@@ -148,21 +148,18 @@ export default function Dashboard() {
   const [cpuData, setCpuData]         = useState<{ time: string; usage: number }[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [runStatus, setRunStatus]     = useState<string>("");
   const wsRef   = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
-  // ── Fetch incidents from MongoDB ────────────────────────────────────────────
+  // ── Fetch incidents from MongoDB ──────────────────────────────────────────
   const fetchIncidents = useCallback(async () => {
     try {
       const res  = await fetch(`${API_URL}/incidents`);
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setIncidents(data);
         localStorage.setItem("cloudpilot_incidents", JSON.stringify(data));
-      } else {
-        // fallback localStorage
-        const stored = localStorage.getItem("cloudpilot_incidents");
-        if (stored) { try { setIncidents(JSON.parse(stored)); } catch {} }
       }
     } catch {
       const stored = localStorage.getItem("cloudpilot_incidents");
@@ -170,7 +167,7 @@ export default function Dashboard() {
     }
   }, []);
 
-  // ── Fetch CPU ───────────────────────────────────────────────────────────────
+  // ── Fetch CPU ─────────────────────────────────────────────────────────────
   const fetchCpu = useCallback(() => {
     fetch(`${API_URL}/metrics/ec2-cpu`)
       .then((r) => r.json())
@@ -191,65 +188,71 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const iv = setInterval(() => { fetchCpu(); fetchIncidents(); }, 30000);
+    const iv = setInterval(() => { fetchCpu(); fetchIncidents(); }, 15000);
     return () => clearInterval(iv);
   }, [autoRefresh, fetchCpu, fetchIncidents]);
 
-  // ── WebSocket ───────────────────────────────────────────────────────────────
+  // ── WebSocket ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const wsUrl = API_URL.replace("https://", "wss://").replace("http://", "ws://");
     let ws: WebSocket;
     let timeout: NodeJS.Timeout;
-
     try {
       ws = new WebSocket(`${wsUrl}/ws/events`);
       wsRef.current = ws;
-
-      timeout = setTimeout(() => {
-        if (ws.readyState !== WebSocket.OPEN) { ws.close(); setConnected(false); }
-      }, 5000);
-
+      timeout = setTimeout(() => { if (ws.readyState !== WebSocket.OPEN) { ws.close(); setConnected(false); } }, 5000);
       ws.onopen  = () => { setConnected(true); clearTimeout(timeout); };
       ws.onclose = () => setConnected(false);
       ws.onerror = () => { setConnected(false); clearTimeout(timeout); };
-
       ws.onmessage = (e) => {
         const data: AgentEvent = JSON.parse(e.data);
         setEvents((prev) => [...prev, data]);
         if (data.event === "pipeline_complete") {
           setRunning(false);
-          // Refresh incidents from MongoDB
-          setTimeout(() => fetchIncidents(), 1000);
+          setRunStatus("");
+          setTimeout(() => fetchIncidents(), 1500);
         }
       };
     } catch { setConnected(false); }
-
     return () => { clearTimeout(timeout!); ws?.close(); };
   }, [fetchIncidents]);
 
-  // ── Auto-scroll ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
   }, [events]);
 
-  // ── Run Agent ───────────────────────────────────────────────────────────────
+  // ── Run Agent ─────────────────────────────────────────────────────────────
   const runAgent = async () => {
     if (running) return;
     setEvents([]);
     setRunning(true);
+    setRunStatus("Starting...");
 
     // Try WebSocket first
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send("run_agent");
+      setRunStatus("Running via WebSocket...");
       return;
     }
 
-    // REST fallback — backend saves to MongoDB
+    // REST fallback with 2 min timeout
     try {
+      setRunStatus("Connecting to backend...");
       setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
 
-      const response = await fetch(`${API_URL}/run-agent`, { method: "POST" });
-      const data     = await response.json();
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 120000);
+
+      const response = await fetch(`${API_URL}/run-agent`, {
+        method: "POST",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      setRunStatus("Pipeline complete!");
 
       setEvents([
         { event: "agent_complete", agent: "anomaly_detector", result: { anomalies: data.anomalies } },
@@ -261,24 +264,31 @@ export default function Dashboard() {
 
       setConnected(true);
 
-      // ── Fetch fresh incidents from MongoDB after save ──
-      await fetchIncidents();
-
-      // ── Save notification ──
+      // Save notification
       const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
       notifs.unshift({
-        id: `notif-${Date.now()}`,
-        title: data.requires_approval ? "Approval Required" : "New Incident Created",
-        message: `${data.id} detected`,
+        id:       `notif-${Date.now()}`,
+        title:    data.requires_approval ? "Approval Required" : "New Incident Created",
+        message:  `${data.id} detected`,
         severity: data.requires_approval ? "warning" : "critical",
-        time: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
-        read: false,
-        type: data.requires_approval ? "approval" : "incident",
+        time:     new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
+        read:     false,
+        type:     data.requires_approval ? "approval" : "incident",
+        created_at: new Date().toISOString(),
       });
       localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
 
-    } catch {
-      setEvents([{ event: "error", message: "❌ Could not connect to backend." }]);
+      // Wait then fetch fresh from MongoDB
+      await new Promise((r) => setTimeout(r, 2000));
+      await fetchIncidents();
+
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        setEvents([{ event: "error", message: "⏱️ Request timed out. Backend may be sleeping. Try again in 30 seconds." }]);
+      } else {
+        setEvents([{ event: "error", message: `❌ Error: ${err?.message || "Could not connect to backend"}` }]);
+      }
+      setRunStatus("");
     } finally {
       setRunning(false);
     }
@@ -317,17 +327,16 @@ export default function Dashboard() {
     rejected:       "bg-red-400/10 text-red-400",
   };
 
-  const pendingCount      = incidents.filter((i) => i.status === "needs_approval").length;
-  const activeIncidents   = incidents.length;
-  const aiRecommendations = pendingCount;
-  const runningAgents     = mockAgents.filter((a) => a.status === "running").length;
-  const healthyServices   = Math.max(0, 24 - activeIncidents);
+  const pendingCount    = incidents.filter((i) => i.status === "needs_approval").length;
+  const activeIncidents = incidents.length;
+  const runningAgents   = mockAgents.filter((a) => a.status === "running").length;
+  const healthyServices = Math.max(0, 24 - activeIncidents);
 
   const kpiConfig = [
-    { title: "Active Incidents",   value: activeIncidents,   icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
-    { title: "Healthy Services",   value: healthyServices,   icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime` },
-    { title: "Running Agents",     value: runningAgents,     icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: `${runningAgents}/${mockAgents.length} active` },
-    { title: "AI Recommendations", value: aiRecommendations, icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${aiRecommendations} pending review` },
+    { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
+    { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime` },
+    { title: "Running Agents",     value: runningAgents,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: `${runningAgents}/${mockAgents.length} active` },
+    { title: "AI Recommendations", value: pendingCount,    icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${pendingCount} pending review` },
   ];
 
   return (
@@ -345,6 +354,7 @@ export default function Dashboard() {
             <span className={connected ? "text-emerald-400" : "text-red-400"}>
               {connected ? "Live — connected to backend" : "Disconnected"}
             </span>
+            {runStatus && <span className="text-xs text-slate-500 ml-2">· {runStatus}</span>}
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -586,8 +596,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               { label: "Anomalies Found", value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0, color: "text-red-400" },
-              { label: "Root Cause",      value: "Generated ✓",      color: "text-blue-400"    },
-              { label: "Fix Plan",        value: "Ready for review",  color: "text-emerald-400" },
+              { label: "Root Cause",      value: "Generated ✓",     color: "text-blue-400"    },
+              { label: "Fix Plan",        value: "Ready for review", color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
               <Card key={label}>
                 <CardContent className="pt-6">

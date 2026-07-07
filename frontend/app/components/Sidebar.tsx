@@ -4,14 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  LayoutDashboard,
-  FileText,
-  ShieldAlert,
-  BarChart3,
-  Cloud,
-  Bell,
-  Settings,
-  Server,
+  LayoutDashboard, FileText, ShieldAlert,
+  BarChart3, Cloud, Bell, Settings, Server,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -23,29 +17,27 @@ const navItems = [
   { label: "Analytics",  href: "/analytics",  icon: BarChart3       },
   { label: "Services",   href: "/services",   icon: Server          },
 ];
-
 const systemItems = [
   { label: "Notifications", href: "/notifications", icon: Bell     },
   { label: "Settings",      href: "/settings",      icon: Settings },
 ];
 
 export function Sidebar() {
-  const pathname              = usePathname();
+  const pathname = usePathname();
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [unreadNotifs, setUnreadNotifs]         = useState(0);
 
   useEffect(() => {
-    // ── Fetch pending approvals from MongoDB API ──────────────────────────────
     const fetchPending = () => {
       fetch(`${API_URL}/incidents`)
         .then((r) => r.json())
         .then((data) => {
           if (Array.isArray(data)) {
-            setPendingApprovals(data.filter((i: any) => i.status === "needs_approval").length);
+            const count = data.filter((i: any) => i.status === "needs_approval").length;
+            setPendingApprovals(count);
           }
         })
         .catch(() => {
-          // fallback localStorage
           try {
             const incidents = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
             setPendingApprovals(incidents.filter((i: any) => i.status === "needs_approval").length);
@@ -53,7 +45,6 @@ export function Sidebar() {
         });
     };
 
-    // ── Unread notifications from localStorage ────────────────────────────────
     const fetchNotifs = () => {
       try {
         const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
@@ -64,28 +55,22 @@ export function Sidebar() {
     fetchPending();
     fetchNotifs();
 
-    const interval = setInterval(() => {
-      fetchPending();
-      fetchNotifs();
-    }, 10000);
-
+    // Refresh every 5 seconds
+    const iv = setInterval(() => { fetchPending(); fetchNotifs(); }, 5000);
     window.addEventListener("storage", fetchNotifs);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", fetchNotifs);
-    };
+    return () => { clearInterval(iv); window.removeEventListener("storage", fetchNotifs); };
   }, []);
 
   const getBadge = (href: string) => {
-    if (href === "/approvals"      && pendingApprovals > 0) return pendingApprovals;
-    if (href === "/notifications"  && unreadNotifs > 0)     return unreadNotifs;
+    if (href === "/approvals"     && pendingApprovals > 0) return pendingApprovals;
+    if (href === "/notifications" && unreadNotifs > 0)     return unreadNotifs;
     return null;
   };
 
-  const badgeColor = (href: string) => {
-    if (href === "/approvals")     return "bg-amber-400/15 text-amber-400 border-amber-400/20";
-    if (href === "/notifications") return "bg-red-500/15 text-red-400 border-red-400/20";
-    return "bg-blue-400/15 text-blue-400 border-blue-400/20";
+  const badgeStyle = (href: string) => {
+    if (href === "/approvals")     return "bg-amber-400/15 text-amber-400 border border-amber-400/20";
+    if (href === "/notifications") return "bg-red-500/15 text-red-400 border border-red-400/20";
+    return "bg-blue-400/15 text-blue-400 border border-blue-400/20";
   };
 
   const renderLink = (item: { href: string; label: string; icon: typeof Bell }) => {
@@ -105,7 +90,7 @@ export function Sidebar() {
         <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-blue-400" : "text-slate-500"}`} />
         <span className="flex-1">{item.label}</span>
         {badge !== null && (
-          <span className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold border ${badgeColor(item.href)}`}>
+          <span className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold ${badgeStyle(item.href)}`}>
             {badge}
           </span>
         )}
@@ -130,7 +115,6 @@ export function Sidebar() {
       <nav className="flex-1 p-3 space-y-0.5">
         <p className="text-[10px] font-medium text-slate-600 uppercase tracking-wider px-3 py-2">Navigation</p>
         {navItems.map(renderLink)}
-
         <div className="pt-4">
           <p className="text-[10px] font-medium text-slate-600 uppercase tracking-wider px-3 py-2">System</p>
           {systemItems.map(renderLink)}
