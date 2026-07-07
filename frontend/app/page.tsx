@@ -222,6 +222,7 @@ export default function Dashboard() {
   // ── Run Agent ─────────────────────────────────────────────────────────────
   const runAgent = async () => {
     if (running) return;
+    console.log("🚀 runAgent called, API_URL:", API_URL); // ADD THIS
     setEvents([]);
     setRunning(true);
     setRunStatus("Starting...");
