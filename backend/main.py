@@ -174,6 +174,10 @@ def get_all_notifications():
     from database import get_notifications
     return get_notifications(limit=50)
 
+@app.get("/ping")
+def ping():
+    return {"pong": True}
+
 @app.websocket("/ws/events")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

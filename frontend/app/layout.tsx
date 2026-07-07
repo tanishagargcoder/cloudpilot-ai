@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Sidebar } from "./components/Sidebar";
 import { AIChatbot } from "./components/AIChatbot";
+import { KeepAlive } from "./components/KeepAlive";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
+          <KeepAlive />
           <div className="flex min-h-screen">
             <Sidebar />
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -33,7 +35,6 @@ export default function RootLayout({
               </main>
             </div>
           </div>
-
           <AIChatbot />
         </ThemeProvider>
       </body>

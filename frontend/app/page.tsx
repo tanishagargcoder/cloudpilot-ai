@@ -241,7 +241,7 @@ export default function Dashboard() {
       setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
 
       const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 120000);
+      const timeoutId  = setTimeout(() => controller.abort(), 180000);
 
       const response = await fetch(`${API_URL}/run-agent`, {
         method: "POST",
