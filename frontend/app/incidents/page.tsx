@@ -131,7 +131,6 @@ export default function IncidentsPage() {
   // ── Fetch from MongoDB API ──────────────────────────────────────────────────
   useEffect(() => {
     const fetchIncidents = async () => {
-      setLoading(true);
       try {
         const res = await fetch(`${API_URL}/incidents`);
         const data = await res.json();
@@ -249,9 +248,15 @@ export default function IncidentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {loading && (
-                    <tr><td colSpan={6} className="py-8 text-center text-slate-600 text-sm animate-pulse">Loading from database...</td></tr>
-                  )}
+                  {loading && [1, 2, 3, 4].map((i) => (
+                    <tr key={`skel-${i}`}>
+                      {[24, 20, 12, 16, 32, 20].map((w, j) => (
+                        <td key={j} className="py-3 pr-4">
+                          <div className={`h-4 animate-pulse rounded bg-slate-800/60`} style={{ width: `${w * 4}px` }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
                   {!loading && paginated.length === 0 && (
                     <tr><td colSpan={6} className="py-12 text-center text-slate-600 text-sm">
                       {incidents.length === 0 ? "No incidents yet. Run the agent pipeline." : "No incidents match your search."}

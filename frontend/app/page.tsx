@@ -11,6 +11,7 @@ import {
   RefreshCw, Hash, Clock,
 } from "lucide-react";
 import Link from "next/link";
+import { SkeletonChart } from "./components/Skeleton";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
@@ -145,6 +146,8 @@ export default function Dashboard() {
   const [connected, setConnected]     = useState(false);
   const [incidents, setIncidents]     = useState<IncidentRecord[]>([]);
   const [cpuData, setCpuData]         = useState<{ time: string; usage: number }[]>([]);
+  const [memData, setMemData]         = useState<{ time: string; usage: number }[]>([]);
+  const [netData, setNetData]         = useState<{ time: string; inbound: number; outbound: number }[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [runStatus, setRunStatus]     = useState("");
@@ -181,13 +184,43 @@ export default function Dashboard() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => { fetchCpu(); fetchIncidents(); }, []);
+  const fetchMemory = useCallback(() => {
+    fetch(`${API_URL}/metrics/ec2-memory`)
+      .then((r) => r.json())
+      .then((data) => {
+        const pts = (data.datapoints || []).map((p: any) => ({
+          time: new Date(p.Timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+          usage: Math.round(p.Average * 100) / 100,
+        }));
+        if (pts.length > 0) setMemData(pts);
+      })
+      .catch(() => {});
+  }, []);
+
+  const fetchNetwork = useCallback(() => {
+    fetch(`${API_URL}/metrics/ec2-network`)
+      .then((r) => r.json())
+      .then((data) => {
+        const toMbps = (bytes: number) => Math.round((bytes * 8 / 300 / 1e6) * 100) / 100;
+        const inbound = data.inbound || [];
+        const outbound = data.outbound || [];
+        const pts = inbound.map((p: any, i: number) => ({
+          time: new Date(p.Timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+          inbound: toMbps(p.Average),
+          outbound: outbound[i] ? toMbps(outbound[i].Average) : 0,
+        }));
+        if (pts.length > 0) setNetData(pts);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { fetchCpu(); fetchIncidents(); fetchMemory(); fetchNetwork(); }, []);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const iv = setInterval(() => { fetchCpu(); fetchIncidents(); }, 15000);
+    const iv = setInterval(() => { fetchCpu(); fetchIncidents(); fetchMemory(); fetchNetwork(); }, 15000);
     return () => clearInterval(iv);
-  }, [autoRefresh, fetchCpu, fetchIncidents]);
+  }, [autoRefresh, fetchCpu, fetchIncidents, fetchMemory, fetchNetwork]);
 
   // WebSocket only for live feed display - NOT for running pipeline
   useEffect(() => {
@@ -403,6 +436,9 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {cpuData.length === 0 ? (
+                <SkeletonChart />
+              ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={cpuData}>
                   <defs>
@@ -418,13 +454,23 @@ export default function Dashboard() {
                   <Area type="monotone" dataKey="usage" stroke="#3b82f6" strokeWidth={2} fill="url(#cpuGrad)" name="CPU Usage" />
                 </AreaChart>
               </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-base">Memory Usage</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between">
+                Memory Usage
+                {memData.length > 0 ? (
+                  <span className="text-xs font-normal text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">Live from AWS</span>
+                ) : (
+                  <span className="text-xs font-normal text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">Simulated</span>
+                )}
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={memoryData}>
+                <AreaChart data={memData.length > 0 ? memData : memoryData}>
                   <defs>
                     <linearGradient id="memGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#10b981" stopOpacity={0.3} />
@@ -441,10 +487,19 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-base">Network Traffic</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between">
+                Network Traffic
+                {netData.length > 0 ? (
+                  <span className="text-xs font-normal text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">Live from AWS</span>
+                ) : (
+                  <span className="text-xs font-normal text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">Simulated</span>
+                )}
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={networkData}>
+                <AreaChart data={netData.length > 0 ? netData : networkData}>
                   <defs>
                     <linearGradient id="inGrad"  x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#8b5cf6" stopOpacity={0.3} />

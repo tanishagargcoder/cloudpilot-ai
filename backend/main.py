@@ -1,10 +1,12 @@
 import os
+import requests
 from database import save_incident, get_incidents, save_notification, update_incident_status
 from datetime import datetime
 import boto3
 from datetime import datetime, timedelta
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,6 +50,51 @@ def get_ec2_cpu():
     )
     datapoints = response.get("Datapoints", [])
     return {"instance_id": os.getenv("EC2_INSTANCE_ID"), "datapoints": datapoints}
+
+@app.get("/metrics/ec2-network")
+def get_ec2_network():
+    def series(metric_name):
+        response = cloudwatch.get_metric_statistics(
+            Namespace="AWS/EC2",
+            MetricName=metric_name,
+            Dimensions=[
+                {"Name": "InstanceId", "Value": os.getenv("EC2_INSTANCE_ID")}
+            ],
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+            Period=300,
+            Statistics=["Average"],
+        )
+        return sorted(response.get("Datapoints", []), key=lambda d: d["Timestamp"])
+
+    return {
+        "instance_id": os.getenv("EC2_INSTANCE_ID"),
+        "inbound": series("NetworkIn"),
+        "outbound": series("NetworkOut"),
+    }
+
+
+@app.get("/metrics/ec2-memory")
+def get_ec2_memory():
+    # Memory needs the CloudWatch agent on the instance (CWAgent namespace).
+    # Returns empty datapoints if the agent isn't installed.
+    try:
+        response = cloudwatch.get_metric_statistics(
+            Namespace="CWAgent",
+            MetricName="mem_used_percent",
+            Dimensions=[
+                {"Name": "InstanceId", "Value": os.getenv("EC2_INSTANCE_ID")}
+            ],
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+            Period=300,
+            Statistics=["Average"],
+        )
+        datapoints = sorted(response.get("Datapoints", []), key=lambda d: d["Timestamp"])
+        return {"instance_id": os.getenv("EC2_INSTANCE_ID"), "datapoints": datapoints}
+    except Exception as e:
+        return {"instance_id": os.getenv("EC2_INSTANCE_ID"), "datapoints": [], "error": str(e)}
+
 
 @app.get("/services/health")
 def get_services_health():
@@ -153,6 +200,48 @@ def run_agent():
     })
     incident.pop("_id", None)
     return incident
+
+class ChatRequest(BaseModel):
+    message: str
+    context: str = ""
+
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+    # Gemini key stays server-side (GEMINI_API_KEY env var) — never exposed to the browser
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return {"reply": None, "error": "GEMINI_API_KEY not configured on server"}
+
+    prompt = f"""You are CloudPilot AI, a friendly and intelligent DevOps assistant embedded in a cloud monitoring dashboard.
+
+{req.context}
+
+You can answer ANY question — DevOps, cloud computing, AI, programming, general knowledge, or friendly conversation. Keep answers concise (under 150 words unless more detail is needed). Use bullet points for lists. Be warm and helpful.
+
+User question: {req.message}"""
+
+    try:
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 400},
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        reply = (
+            data.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text")
+        )
+        return {"reply": reply or "Sorry, I couldn't get a response. Please try again."}
+    except Exception as e:
+        return {"reply": None, "error": str(e)}
+
 
 @app.get("/incidents")
 def get_all_incidents():

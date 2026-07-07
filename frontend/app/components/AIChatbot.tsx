@@ -25,6 +25,8 @@ type Message = {
 
 type VoiceMode = "text-only" | "voice-and-text";
 
+const API_URL = "https://cloudpilot-ai-backend.onrender.com";
+
 // ── Text-to-speech ──────────────────────────────────────────────────────────
 function speak(text: string, onEnd?: () => void) {
   if ("speechSynthesis" in window) {
@@ -142,14 +144,11 @@ export function AIChatbot() {
     return "I can answer questions about your **system status**, **incidents**, and **approvals** right now.\n\nFor full AI answers (DevOps, cloud, anything!), add a `NEXT_PUBLIC_GEMINI_API_KEY` in your environment settings.";
   };
 
-  // ── Gemini API call (free tier) ──────────────────────────────────────────
-  const callGemini = async (userMessage: string): Promise<string> => {
+  // ── Infra context shared by backend + direct calls ──────────────────────
+  const buildContext = () => {
     const incidents = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
     const pending = incidents.filter((i: any) => i.status === "needs_approval");
-
-    const systemContext = `You are CloudPilot AI, a friendly and intelligent DevOps assistant embedded in a cloud monitoring dashboard.
-
-Current infrastructure context:
+    return `Current infrastructure context:
 - Total incidents recorded: ${incidents.length}
 - Pending approvals: ${pending.length}
 - Recent incidents: ${
@@ -157,7 +156,27 @@ Current infrastructure context:
         .slice(0, 3)
         .map((i: any) => `[${i.status}] ${(i.root_cause || "unknown").slice(0, 60)}`)
         .join(" | ") || "None yet"
-    }
+    }`;
+  };
+
+  // ── Preferred path: backend /chat (Gemini key stays server-side) ────────
+  const callBackendChat = async (userMessage: string): Promise<string> => {
+    const response = await fetch(`${API_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMessage, context: buildContext() }),
+    });
+    if (!response.ok) throw new Error(`Backend error ${response.status}`);
+    const data = await response.json();
+    if (!data.reply) throw new Error(data.error || "No reply from backend");
+    return data.reply;
+  };
+
+  // ── Fallback: direct Gemini call (only if a public key is set) ──────────
+  const callGemini = async (userMessage: string): Promise<string> => {
+    const systemContext = `You are CloudPilot AI, a friendly and intelligent DevOps assistant embedded in a cloud monitoring dashboard.
+
+${buildContext()}
 
 You can answer ANY question — DevOps, cloud computing, AI, programming, general knowledge, or friendly conversation. Keep answers concise (under 150 words unless more detail is needed). Use bullet points for lists. Be warm and helpful.
 
@@ -209,7 +228,13 @@ User question: ${userMessage}`;
     setIsLoading(true);
 
     try {
-      const reply = await callGemini(trimmed);
+      // Try secure backend first, then direct Gemini, then local answers
+      let reply: string;
+      try {
+        reply = await callBackendChat(trimmed);
+      } catch {
+        reply = await callGemini(trimmed);
+      }
       const botMsg: Message = {
         id: `bot-${Date.now()}`,
         role: "assistant",

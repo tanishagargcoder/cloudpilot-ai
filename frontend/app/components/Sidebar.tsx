@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, FileText, ShieldAlert,
   BarChart3, Cloud, Bell, Settings, Server,
+  Menu, X,
 } from "lucide-react";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
@@ -26,6 +27,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [unreadNotifs, setUnreadNotifs]         = useState(0);
+  const [mobileOpen, setMobileOpen]             = useState(false);
+
+  // Close the drawer when navigating to a new page
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
     const fetchPending = () => {
@@ -102,19 +107,57 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-56 border-r border-slate-800 bg-slate-950 min-h-screen flex flex-col shrink-0">
+    <>
+      {/* Mobile top bar (visible only below lg) */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-3 border-b border-slate-800 bg-slate-950/95 backdrop-blur px-4 py-3">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-300 hover:text-white transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shrink-0">
+          <Cloud className="h-4 w-4 text-white" />
+        </div>
+        <span className="font-bold text-sm bg-gradient-to-r from-blue-300 via-slate-100 to-violet-300 bg-clip-text text-transparent">
+          CloudPilot AI
+        </span>
+      </div>
+
+      {/* Backdrop when drawer is open on mobile */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`w-56 border-r border-slate-800 bg-slate-950 flex flex-col shrink-0
+          fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:static lg:translate-x-0 lg:min-h-screen`}
+      >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-violet-600/10 pointer-events-none" />
         <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-600/30 shrink-0">
           <Cloud className="h-4.5 w-4.5 text-white" />
         </div>
-        <div className="relative">
+        <div className="relative flex-1">
           <span className="font-bold text-sm leading-none bg-gradient-to-r from-blue-300 via-slate-100 to-violet-300 bg-clip-text text-transparent">
             CloudPilot AI
           </span>
           <p className="text-[10px] text-slate-500 mt-0.5">DevOps Assistant</p>
         </div>
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="lg:hidden relative flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+          aria-label="Close menu"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -138,6 +181,7 @@ export function Sidebar() {
         </div>
         <div className="text-[10px] text-slate-600 px-1">v1.0.0 · CloudPilot AI</div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

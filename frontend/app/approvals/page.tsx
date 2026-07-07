@@ -5,6 +5,7 @@ import {
   AlertTriangle, CheckCircle, XCircle, Clock,
   ChevronLeft, ShieldAlert, ShieldCheck, ShieldX,
 } from "lucide-react";
+import { SkeletonList } from "../components/Skeleton";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -35,7 +36,6 @@ export default function ApprovalsPage() {
   const [loading, setLoading]                   = useState(true);
 
   const fetchAll = async () => {
-    setLoading(true);
     try {
       const res  = await fetch(`${API_URL}/incidents`);
       const data = await res.json();
@@ -149,11 +149,7 @@ export default function ApprovalsPage() {
 
       {/* Incident Cards */}
       <div className="space-y-4">
-        {loading && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-12 text-center">
-            <div className="animate-pulse text-slate-500 text-sm">Loading from database...</div>
-          </div>
-        )}
+        {loading && <SkeletonList rows={3} />}
 
         {!loading && pendingIncidents.length === 0 && (
           <div className="rounded-xl border border-slate-800 bg-slate-900/50 py-16 text-center space-y-3">
