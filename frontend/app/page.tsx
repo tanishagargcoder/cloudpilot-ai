@@ -8,7 +8,7 @@ import {
 import {
   AlertTriangle, CheckCircle, Bot, Lightbulb, Activity,
   Search, Pause, Play, Zap, Info, CheckCircle2,
-  RefreshCw, Hash, Clock,
+  RefreshCw, Hash, Clock, Bell, Settings,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,14 +25,11 @@ function NotificationBadge() {
     check();
     const iv = setInterval(check, 2000);
     window.addEventListener("storage", check);
-    window.addEventListener("notifications-updated", check);
-    return () => { clearInterval(iv); window.removeEventListener("storage", check);
-      window.removeEventListener("notifications-updated", check);
-     };
+    return () => { clearInterval(iv); window.removeEventListener("storage", check); };
   }, []);
   if (count === 0) return null;
   return (
-    <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-lg shadow-red-500/30">
+    <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -67,36 +64,30 @@ type AgentStatus = {
 
 // ── Mock data ────────────────────────────────────────────────────────────────
 const mockAgents: AgentStatus[] = [
-  { id: "agent-1", name: "Monitoring Agent", status: "running", lastSeen: "2s ago", tasks: 142 },
-  { id: "agent-2", name: "Analysis Agent",   status: "running", lastSeen: "5s ago", tasks: 89 },
-  { id: "agent-3", name: "Report Agent",     status: "idle",    lastSeen: "1m ago", tasks: 34 },
-  { id: "agent-4", name: "Remediation Agent",status: "running", lastSeen: "3s ago", tasks: 67 },
+  { id: "agent-1", name: "Monitoring Agent",   status: "running", lastSeen: "2s ago",  tasks: 142 },
+  { id: "agent-2", name: "Analysis Agent",     status: "running", lastSeen: "5s ago",  tasks: 89  },
+  { id: "agent-3", name: "Report Agent",       status: "idle",    lastSeen: "1m ago",  tasks: 34  },
+  { id: "agent-4", name: "Remediation Agent",  status: "running", lastSeen: "3s ago",  tasks: 67  },
 ];
 const memoryData = [
-  { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 },
-  { time: "04:00", usage: 61 }, { time: "06:00", usage: 68 },
-  { time: "08:00", usage: 75 }, { time: "10:00", usage: 78 },
-  { time: "12:00", usage: 76 },
+  { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 }, { time: "04:00", usage: 61 },
+  { time: "06:00", usage: 68 }, { time: "08:00", usage: 75 }, { time: "10:00", usage: 78 }, { time: "12:00", usage: 76 },
 ];
 const networkData = [
-  { time: "00:00", inbound: 120, outbound: 80  },
-  { time: "02:00", inbound: 150, outbound: 95  },
-  { time: "04:00", inbound: 110, outbound: 70  },
-  { time: "06:00", inbound: 200, outbound: 140 },
-  { time: "08:00", inbound: 350, outbound: 220 },
-  { time: "10:00", inbound: 420, outbound: 280 },
-  { time: "12:00", inbound: 380, outbound: 250 },
+  { time: "00:00", inbound: 120, outbound: 80  }, { time: "02:00", inbound: 150, outbound: 95  },
+  { time: "04:00", inbound: 110, outbound: 70  }, { time: "06:00", inbound: 200, outbound: 140 },
+  { time: "08:00", inbound: 350, outbound: 220 }, { time: "10:00", inbound: 420, outbound: 280 }, { time: "12:00", inbound: 380, outbound: 250 },
 ];
 const statusConfig: Record<string, { color: string; bg: string; icon: typeof Play }> = {
-  running: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: Play },
+  running: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: Play  },
   idle:    { color: "text-amber-400",   bg: "bg-amber-400/10",   icon: Pause },
   error:   { color: "text-red-400",     bg: "bg-red-400/10",     icon: Activity },
 };
 const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info }> = {
-  alert:   { color: "text-red-400",    bg: "bg-red-400/10",    icon: AlertTriangle },
-  info:    { color: "text-blue-400",   bg: "bg-blue-400/10",   icon: Info },
-  action:  { color: "text-amber-400",  bg: "bg-amber-400/10",  icon: Zap },
-  success: { color: "text-emerald-400",bg: "bg-emerald-400/10",icon: CheckCircle2 },
+  alert:   { color: "text-red-400",     bg: "bg-red-400/10",     icon: AlertTriangle },
+  info:    { color: "text-blue-400",    bg: "bg-blue-400/10",    icon: Info          },
+  action:  { color: "text-amber-400",   bg: "bg-amber-400/10",   icon: Zap           },
+  success: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle2  },
 };
 
 // ── Helper components ────────────────────────────────────────────────────────
@@ -107,7 +98,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="text-sm font-medium text-slate-300 mb-1">{label}</p>
       {payload.map((e: any, i: number) => (
         <p key={i} className="text-sm" style={{ color: e.color }}>
-          {e.name}: {e.value}{e.name.includes("bound") ? " Mbps" : "%"}
+          {e.name}: {e.value}{e.name?.includes("bound") ? " Mbps" : "%"}
         </p>
       ))}
     </div>
@@ -129,12 +120,11 @@ function CardContent({ children, className = "" }: { children: React.ReactNode; 
 // ── Slack Activity Feed ──────────────────────────────────────────────────────
 function SlackActivityFeed() {
   const [activities, setActivities] = useState<{ time: string; label: string; color: string }[]>([]);
-
   useEffect(() => {
     const load = () => {
       try {
         const incidents: IncidentRecord[] = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
-        const items = incidents.slice(0, 8).flatMap((inc) => {
+        const items = incidents.slice(0, 5).flatMap((inc) => {
           const base = new Date(inc.created_at);
           const fmt = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
           const rows = [
@@ -144,9 +134,9 @@ function SlackActivityFeed() {
           ];
           if (inc.status === "approved")
             rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓", color: "bg-emerald-500" });
-          if (inc.status === "rejected")
+          else if (inc.status === "rejected")
             rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected", color: "bg-red-500" });
-          if (inc.status === "needs_approval")
+          else if (inc.status === "needs_approval")
             rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested", color: "bg-amber-400" });
           return rows;
         });
@@ -168,9 +158,7 @@ function SlackActivityFeed() {
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
-          <div className="text-slate-600 text-xs text-center py-8">
-            No activity yet. Run the agent pipeline to see events.
-          </div>
+          <div className="text-slate-600 text-xs text-center py-8">No activity yet. Run the agent pipeline.</div>
         ) : (
           <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
             {activities.map((a, i) => (
@@ -187,22 +175,51 @@ function SlackActivityFeed() {
   );
 }
 
+// ── Save incident helper ─────────────────────────────────────────────────────
+function saveIncident(data: PipelineState, setIncidents: (fn: (prev: IncidentRecord[]) => IncidentRecord[]) => void) {
+  const incident: IncidentRecord = {
+    ...data,
+    id: `incident-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    status: data.requires_approval ? "needs_approval" : "healthy",
+  };
+  localStorage.setItem("cloudpilot_latest_incident", JSON.stringify(incident));
+  const existing = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
+  const updated = [incident, ...existing].slice(0, 10);
+  localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
+  setIncidents(() => updated);
+
+  const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
+  notifs.unshift({
+    id: `notif-${Date.now()}`,
+    title: incident.status === "needs_approval" ? "Approval Required" : "New Incident Created",
+    message: `${incident.id} detected`,
+    severity: incident.status === "needs_approval" ? "warning" : "critical",
+    time: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
+    read: false,
+    type: incident.status === "needs_approval" ? "approval" : "incident",
+  });
+  localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
+  return incident;
+}
+
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [events, setEvents]       = useState<AgentEvent[]>([]);
-  const [running, setRunning]     = useState(false);
-  const [connected, setConnected] = useState(false);
-  const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
-  const [cpuData, setCpuData]     = useState<{ time: string; usage: number }[]>([]);
+  const [events, setEvents]         = useState<AgentEvent[]>([]);
+  const [running, setRunning]       = useState(false);
+  const [connected, setConnected]   = useState(false);
+  const [incidents, setIncidents]   = useState<IncidentRecord[]>([]);
+  const [cpuData, setCpuData]       = useState<{ time: string; usage: number }[]>([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
-  console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
   const wsRef   = useRef<WebSocket | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
 
-  // ── Fetch CPU from AWS ──────────────────────────────────────────────────
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+  // ── Fetch CPU ──────────────────────────────────────────────────────────────
   const fetchCpu = useCallback(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/metrics/ec2-cpu`)
+    fetch(`${API_URL}/metrics/ec2-cpu`)
       .then((r) => r.json())
       .then((data) => {
         const pts = (data.datapoints || [])
@@ -215,9 +232,8 @@ export default function Dashboard() {
         setLastUpdated(new Date());
       })
       .catch(() => {});
-  }, []);
+  }, [API_URL]);
 
-  // Auto refresh every 60s
   useEffect(() => {
     fetchCpu();
     if (!autoRefresh) return;
@@ -225,66 +241,91 @@ export default function Dashboard() {
     return () => clearInterval(iv);
   }, [fetchCpu, autoRefresh]);
 
-  // ── WebSocket ────────────────────────────────────────────────────────────
+  // ── WebSocket with fallback ────────────────────────────────────────────────
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    const wsUrl = apiUrl.replace("https://", "wss://").replace("http://", "ws://");
-    const ws = new WebSocket(`${wsUrl}/ws/events`);
-    wsRef.current = ws;
-    ws.onopen  = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onmessage = (e) => {
-      const data: AgentEvent = JSON.parse(e.data);
-      setEvents((prev) => [...prev, data]);
-      if (data.event === "pipeline_complete" && data.final_state) {
-        setRunning(false);
-        const incident: IncidentRecord = {
-          ...data.final_state,
-          id: `incident-${Date.now()}`,
-          created_at: new Date().toISOString(),
-          status: data.final_state.requires_approval ? "needs_approval" : "healthy",
-        };
-        localStorage.setItem("cloudpilot_latest_incident", JSON.stringify(incident));
-        const existing = JSON.parse(localStorage.getItem("cloudpilot_incidents") || "[]");
-        const updated = [incident, ...existing].slice(0, 10);
-        localStorage.setItem("cloudpilot_incidents", JSON.stringify(updated));
-        window.dispatchEvent(new Event("storage"));
-        window.dispatchEvent(new Event("incidents-updated"));
-        setIncidents(updated);
-        // Save notification
-        const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
-        notifs.unshift({
-          id: `notif-${Date.now()}`,
-          title: incident.status === "needs_approval" ? "Approval Required" : "New Incident Created",
-          message: incident.status === "needs_approval" ? `${incident.id} requires approval` : `${incident.id} detected`,
-          severity: incident.status === "needs_approval" ? "warning" : "critical",
-          time: new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
-          read: false,
-          type: incident.status === "needs_approval" ? "approval" : "incident",
-        });
-        localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
-        window.dispatchEvent(new Event("storage"));
-        window.dispatchEvent(new Event("notifications-updated"));
-      }
-    };
-    return () => ws.close();
-  }, []);
+    const wsUrl = API_URL.replace("https://", "wss://").replace("http://", "ws://");
+    let ws: WebSocket;
+    let timeout: NodeJS.Timeout;
 
-  // ── Load incidents ───────────────────────────────────────────────────────
+    try {
+      ws = new WebSocket(`${wsUrl}/ws/events`);
+      wsRef.current = ws;
+
+      timeout = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          ws.close();
+          setConnected(false);
+        }
+      }, 5000);
+
+      ws.onopen = () => { setConnected(true); clearTimeout(timeout); };
+      ws.onclose = () => setConnected(false);
+      ws.onerror = () => { setConnected(false); clearTimeout(timeout); };
+
+      ws.onmessage = (e) => {
+        const data: AgentEvent = JSON.parse(e.data);
+        setEvents((prev) => [...prev, data]);
+        if (data.event === "pipeline_complete" && data.final_state) {
+          setRunning(false);
+          saveIncident(data.final_state, setIncidents);
+        }
+      };
+    } catch {
+      setConnected(false);
+    }
+
+    return () => {
+      clearTimeout(timeout!);
+      ws?.close();
+    };
+  }, [API_URL]);
+
+  // ── Load incidents ─────────────────────────────────────────────────────────
   useEffect(() => {
     const stored = localStorage.getItem("cloudpilot_incidents");
     if (stored) { try { setIncidents(JSON.parse(stored)); } catch { setIncidents([]); } }
   }, []);
 
-  // ── Auto-scroll feed ─────────────────────────────────────────────────────
+  // ── Auto-scroll feed ───────────────────────────────────────────────────────
   useEffect(() => {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
   }, [events]);
 
-  const runAgent = () => {
-    if (!wsRef.current || running) return;
-    setEvents([]); setRunning(true);
-    wsRef.current.send("run_agent");
+  // ── Run agent — WebSocket first, then REST fallback ────────────────────────
+  const runAgent = async () => {
+    if (running) return;
+    setEvents([]);
+    setRunning(true);
+
+    // Try WebSocket
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send("run_agent");
+      return;
+    }
+
+    // REST API fallback (for Render / when WebSocket not available)
+    try {
+      setEvents([
+        { event: "agent_start",    agent: "anomaly_detector" },
+      ]);
+      const response = await fetch(`${API_URL}/run-agent`, { method: "POST" });
+      const data = await response.json();
+
+      setEvents([
+        { event: "agent_complete", agent: "anomaly_detector", result: { anomalies: data.anomalies } },
+        { event: "agent_complete", agent: "rca_agent",        result: { root_cause: data.root_cause } },
+        { event: "agent_complete", agent: "fix_agent",        result: { fix_plan: data.fix_plan } },
+        { event: "agent_complete", agent: "report_writer",    result: { report: data.report } },
+        { event: "pipeline_complete", final_state: data },
+      ]);
+
+      saveIncident(data, setIncidents);
+      setConnected(true);
+    } catch {
+      setEvents([{ event: "error", message: "❌ Could not connect to backend. Is it running?" }]);
+    } finally {
+      setRunning(false);
+    }
   };
 
   const getAgentLabel = (ev: AgentEvent) => {
@@ -292,12 +333,14 @@ export default function Dashboard() {
     if (ev.event === "agent_complete")    return `✅ ${ev.agent} complete`;
     if (ev.event === "pipeline_complete") return `🎉 Pipeline complete!`;
     if (ev.event === "connected")         return `🔗 Connected to CloudPilot AI`;
+    if (ev.event === "error")             return ev.message || "Error";
     return ev.message || ev.event;
   };
   const getEventType = (ev: string) => {
     if (ev === "agent_start")       return "info";
     if (ev === "agent_complete")    return "success";
     if (ev === "pipeline_complete") return "action";
+    if (ev === "error")             return "alert";
     return "info";
   };
   const getIncidentSeverity = (inc: IncidentRecord) => {
@@ -312,35 +355,34 @@ export default function Dashboard() {
     info:     { color: "text-blue-400",   bg: "bg-blue-400/10",   label: "info"     },
   };
   const statusBadge: Record<string, string> = {
-    healthy:       "bg-emerald-400/10 text-emerald-400",
-    needs_approval:"bg-amber-400/10 text-amber-400",
-    approved:      "bg-blue-400/10 text-blue-400",
-    rejected:      "bg-red-400/10 text-red-400",
+    healthy:        "bg-emerald-400/10 text-emerald-400",
+    needs_approval: "bg-amber-400/10 text-amber-400",
+    approved:       "bg-blue-400/10 text-blue-400",
+    rejected:       "bg-red-400/10 text-red-400",
   };
 
-  const activeIncidents  = incidents.length;
+  const activeIncidents   = incidents.length;
   const aiRecommendations = incidents.filter((i) => i.requires_approval).length;
-  const runningAgents    = mockAgents.filter((a) => a.status === "running").length;
-  const healthyServices  = Math.max(0, 24 - incidents.length);
+  const runningAgents     = mockAgents.filter((a) => a.status === "running").length;
+  const healthyServices   = Math.max(0, 24 - incidents.length);
 
   const kpiConfig = [
-    { title: "Active Incidents",    value: activeIncidents,   icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
-    { title: "Healthy Services",    value: healthyServices,   icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices / 24) * 100)}% uptime` },
-    { title: "Running Agents",      value: runningAgents,     icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: `${runningAgents}/${mockAgents.length} active` },
-    { title: "AI Recommendations",  value: aiRecommendations, icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${aiRecommendations} pending review` },
+    { title: "Active Incidents",   value: activeIncidents,   icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open` },
+    { title: "Healthy Services",   value: healthyServices,   icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime` },
+    { title: "Running Agents",     value: runningAgents,     icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: `${runningAgents}/${mockAgents.length} active` },
+    { title: "AI Recommendations", value: aiRecommendations, icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: `${aiRecommendations} pending review` },
   ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <main className="p-4 lg:p-8 space-y-6">
-
-        {/* Page title */}
+        {/* Title */}
         <div>
           <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
           <p className="text-slate-500 mt-1">Real-time AWS monitoring and AI remediation</p>
         </div>
 
-        {/* ── Auto Refresh Bar ── */}
+        {/* Status + Controls */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span className={`inline-flex h-2.5 w-2.5 rounded-full ${connected ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
@@ -348,40 +390,26 @@ export default function Dashboard() {
               {connected ? "Live — connected to backend" : "Disconnected"}
             </span>
           </div>
-
-          <div className="flex items-center gap-3">
-            {/* Last updated */}
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <Clock className="h-3.5 w-3.5" />
               Last updated: {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
             </div>
-            {/* Auto refresh toggle */}
             <button
               onClick={() => setAutoRefresh((p) => !p)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${
-                autoRefresh
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-slate-900 text-slate-500 border-slate-800"
-              }`}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${autoRefresh ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-900 text-slate-500 border-slate-800"}`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? "bg-emerald-500 animate-pulse" : "bg-slate-600"}`} />
               Auto Refresh
             </button>
-            {/* Refresh now */}
-            <button
-              onClick={fetchCpu}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors"
-            >
+            <button onClick={fetchCpu} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh Now
             </button>
-            {/* Run pipeline */}
             <button
               onClick={runAgent}
-              disabled={running || !connected}
-              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${
-                running || !connected ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"
-              }`}
+              disabled={running}
+              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}
             >
               {running ? "⏳ Running..." : "🚀 Run Agent Pipeline"}
             </button>
@@ -417,7 +445,7 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={cpuData}>
                   <defs>
-                    <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
@@ -426,19 +454,18 @@ export default function Dashboard() {
                   <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit="%" />
                   <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="usage" stroke="#3b82f6" strokeWidth={2} fill="url(#cpuGradient)" name="CPU Usage" />
+                  <Area type="monotone" dataKey="usage" stroke="#3b82f6" strokeWidth={2} fill="url(#cpuGrad)" name="CPU Usage" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader><CardTitle className="text-base">Memory Usage</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={memoryData}>
                   <defs>
-                    <linearGradient id="memGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="memGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#10b981" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
@@ -447,23 +474,22 @@ export default function Dashboard() {
                   <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit="%" />
                   <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="usage" stroke="#10b981" strokeWidth={2} fill="url(#memGradient)" name="Memory Usage" />
+                  <Area type="monotone" dataKey="usage" stroke="#10b981" strokeWidth={2} fill="url(#memGrad)" name="Memory Usage" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader><CardTitle className="text-base">Network Traffic</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={networkData}>
                   <defs>
-                    <linearGradient id="inGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="inGrad"  x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#8b5cf6" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="outGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                     </linearGradient>
@@ -473,8 +499,8 @@ export default function Dashboard() {
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit=" Mbps" />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="inbound"  stroke="#8b5cf6" strokeWidth={2} fill="url(#inGradient)"  name="Inbound" />
-                  <Area type="monotone" dataKey="outbound" stroke="#f59e0b" strokeWidth={2} fill="url(#outGradient)" name="Outbound" />
+                  <Area type="monotone" dataKey="inbound"  stroke="#8b5cf6" strokeWidth={2} fill="url(#inGrad)"  name="Inbound" />
+                  <Area type="monotone" dataKey="outbound" stroke="#f59e0b" strokeWidth={2} fill="url(#outGrad)" name="Outbound" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -536,7 +562,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-slate-400">{getAgentLabel(ev)}</p>
+                          <p className="text-xs font-medium text-slate-300">{getAgentLabel(ev)}</p>
                           <p className="text-xs text-slate-600 shrink-0">just now</p>
                         </div>
                         {ev.result && (
@@ -553,11 +579,9 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* ── Slack Activity Feed + Recent Incidents side by side ── */}
+        {/* Slack Feed + Recent Incidents */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <SlackActivityFeed />
-
-          {/* Recent Incidents */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm">Recent Incidents</CardTitle>
@@ -576,20 +600,14 @@ export default function Dashboard() {
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {incidents.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-slate-600 text-xs">
-                          No incidents yet. Run the agent pipeline.
-                        </td>
-                      </tr>
+                      <tr><td colSpan={4} className="py-6 text-center text-slate-600 text-xs">No incidents yet. Run the agent pipeline.</td></tr>
                     )}
                     {incidents.slice(0, 5).map((inc) => {
                       const sev = severityConfig[getIncidentSeverity(inc)];
                       return (
                         <tr key={inc.id} className="hover:bg-slate-800/50 transition-colors">
                           <td className="py-2 pr-3">
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}>
-                              {sev.label}
-                            </span>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}>{sev.label}</span>
                           </td>
                           <td className="py-2 pr-3">
                             <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[inc.status] || "bg-slate-800 text-slate-400"}`}>
@@ -617,8 +635,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               { label: "Anomalies Found", value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0, color: "text-red-400" },
-              { label: "Root Cause", value: "Generated ✓", color: "text-blue-400" },
-              { label: "Fix Plan", value: "Ready for review", color: "text-emerald-400" },
+              { label: "Root Cause",      value: "Generated ✓",       color: "text-blue-400"    },
+              { label: "Fix Plan",        value: "Ready for review",   color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
               <Card key={label}>
                 <CardContent className="pt-6">

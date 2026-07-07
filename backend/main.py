@@ -1,4 +1,6 @@
 import os
+from db import incidents_collection, notifications_collection
+from datetime import datetime
 import boto3
 from datetime import datetime, timedelta
 from fastapi import FastAPI, WebSocket
@@ -16,7 +18,9 @@ app = FastAPI(title="CloudPilot AI - DevOps Assistant")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000",
+    "https://cloudpilot-ai-three.vercel.app",
+    "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
