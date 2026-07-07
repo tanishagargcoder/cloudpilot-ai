@@ -152,7 +152,7 @@ def run_agent():
         "type": "approval" if state["requires_approval"] else "incident",
         "created_at": datetime.utcnow().isoformat(),
     })
-
+    incident.pop("_id", None)
     return incident
 
 @app.get("/incidents")
