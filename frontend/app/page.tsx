@@ -231,6 +231,7 @@ export default function Dashboard() {
   // ── Run Agent Pipeline ────────────────────────────────────────────────────
   const runAgent = async () => {
     if (running) return;
+    alert("runAgent called! API: " + API_URL);
     setEvents([]);
     setRunning(true);
     setRunStatus("Starting pipeline...");
