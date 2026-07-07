@@ -1,5 +1,5 @@
 import os
-from db import incidents_collection, notifications_collection
+from database import save_incident, get_incidents, save_notification, update_incident_status
 from datetime import datetime
 import boto3
 from datetime import datetime, timedelta
@@ -129,8 +129,50 @@ def run_agent():
     state = analyze_root_cause(state)
     state = generate_fix(state)
     state = write_report(state)
-    return state
 
+    # Save to MongoDB
+    from datetime import datetime
+    incident = {
+        **state,
+        "id": f"incident-{int(datetime.utcnow().timestamp() * 1000)}",
+        "created_at": datetime.utcnow().isoformat(),
+        "status": "needs_approval" if state["requires_approval"] else "healthy",
+        "anomalies": state.get("anomalies", []),
+    }
+    save_incident(incident)
+
+    # Save notification
+    save_notification({
+        "id": f"notif-{int(datetime.utcnow().timestamp() * 1000)}",
+        "title": "Approval Required" if state["requires_approval"] else "New Incident",
+        "message": f"{incident['id']} detected",
+        "severity": "warning" if state["requires_approval"] else "critical",
+        "time": datetime.utcnow().isoformat(),
+        "read": False,
+        "type": "approval" if state["requires_approval"] else "incident",
+        "created_at": datetime.utcnow().isoformat(),
+    })
+
+    return incident
+
+@app.get("/incidents")
+def get_all_incidents():
+    return get_incidents(limit=20)
+
+@app.post("/incidents/{incident_id}/approve")
+def approve_incident(incident_id: str):
+    update_incident_status(incident_id, "approved")
+    return {"status": "approved"}
+
+@app.post("/incidents/{incident_id}/reject")
+def reject_incident(incident_id: str):
+    update_incident_status(incident_id, "rejected")
+    return {"status": "rejected"}
+
+@app.get("/notifications")
+def get_all_notifications():
+    from database import get_notifications
+    return get_notifications(limit=50)
 
 @app.websocket("/ws/events")
 async def websocket_endpoint(websocket: WebSocket):
