@@ -135,7 +135,7 @@ def run_agent():
     incident = {
         **state,
         "id": f"incident-{int(datetime.utcnow().timestamp() * 1000)}",
-        ""created_at": datetime.now().isoformat(),
+        "created_at": datetime.now().isoformat(),
         "status": "needs_approval" if state["requires_approval"] else "healthy",
         "anomalies": state.get("anomalies", []),
     }
