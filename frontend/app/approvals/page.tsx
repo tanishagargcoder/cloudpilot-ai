@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   AlertTriangle, CheckCircle, XCircle, Clock,
-  ChevronLeft, ShieldAlert, ShieldCheck, ShieldX, Activity,
+  ChevronLeft, ShieldAlert, ShieldCheck, ShieldX,
 } from "lucide-react";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
@@ -30,82 +30,69 @@ const severityConfig = {
 };
 
 export default function ApprovalsPage() {
-  const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [pendingIncidents, setPendingIncidents] = useState<IncidentRecord[]>([]);
+  const [allIncidents, setAllIncidents]         = useState<IncidentRecord[]>([]);
+  const [loading, setLoading]                   = useState(true);
 
-  // ── Fetch pending from MongoDB API ──────────────────────────────────────────
-  const fetchPending = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
       const res  = await fetch(`${API_URL}/incidents`);
       const data = await res.json();
-      const pending = (Array.isArray(data) ? data : []).filter((i: IncidentRecord) => i.status === "needs_approval");
-      setIncidents(pending);
+      const all  = Array.isArray(data) ? data : [];
+      setAllIncidents(all);
+      setPendingIncidents(all.filter((i: IncidentRecord) => i.status === "needs_approval"));
     } catch {
       // fallback localStorage
-      const stored = localStorage.getItem("cloudpilot_incidents");
-      if (stored) {
-        try {
-          const all = JSON.parse(stored);
-          setIncidents(all.filter((i: IncidentRecord) => i.status === "needs_approval"));
-        } catch { setIncidents([]); }
-      }
+      try {
+        const stored = localStorage.getItem("cloudpilot_incidents");
+        const all    = stored ? JSON.parse(stored) : [];
+        setAllIncidents(all);
+        setPendingIncidents(all.filter((i: IncidentRecord) => i.status === "needs_approval"));
+      } catch { setPendingIncidents([]); setAllIncidents([]); }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPending();
-    const iv = setInterval(fetchPending, 10000);
+    fetchAll();
+    const iv = setInterval(fetchAll, 8000);
     return () => clearInterval(iv);
   }, []);
 
-  // ── Approve / Reject via API ─────────────────────────────────────────────────
   const handleApprove = async (id: string) => {
     try {
       await fetch(`${API_URL}/incidents/${id}/approve`, { method: "POST" });
-      setIncidents((prev) => prev.filter((i) => i.id !== id));
-      // Also update localStorage
+    } catch {}
+    // Update localStorage too
+    try {
       const stored = localStorage.getItem("cloudpilot_incidents");
       if (stored) {
         const all = JSON.parse(stored).map((i: IncidentRecord) => i.id === id ? { ...i, status: "approved" } : i);
         localStorage.setItem("cloudpilot_incidents", JSON.stringify(all));
       }
-    } catch {
-      // fallback localStorage only
-      const stored = localStorage.getItem("cloudpilot_incidents");
-      if (stored) {
-        const all = JSON.parse(stored).map((i: IncidentRecord) => i.id === id ? { ...i, status: "approved" } : i);
-        localStorage.setItem("cloudpilot_incidents", JSON.stringify(all));
-        setIncidents((prev) => prev.filter((i) => i.id !== id));
-      }
-    }
+    } catch {}
+    await fetchAll();
   };
 
   const handleReject = async (id: string) => {
     try {
       await fetch(`${API_URL}/incidents/${id}/reject`, { method: "POST" });
-      setIncidents((prev) => prev.filter((i) => i.id !== id));
+    } catch {}
+    try {
       const stored = localStorage.getItem("cloudpilot_incidents");
       if (stored) {
         const all = JSON.parse(stored).map((i: IncidentRecord) => i.id === id ? { ...i, status: "rejected" } : i);
         localStorage.setItem("cloudpilot_incidents", JSON.stringify(all));
       }
-    } catch {
-      const stored = localStorage.getItem("cloudpilot_incidents");
-      if (stored) {
-        const all = JSON.parse(stored).map((i: IncidentRecord) => i.id === id ? { ...i, status: "rejected" } : i);
-        localStorage.setItem("cloudpilot_incidents", JSON.stringify(all));
-        setIncidents((prev) => prev.filter((i) => i.id !== id));
-      }
-    }
+    } catch {}
+    await fetchAll();
   };
 
   const getIncidentSeverity = (incident: IncidentRecord) => {
-    if (incident.status === "needs_approval") return "critical";
-    if ((incident.anomalies as unknown[])?.length > 0) return "warning";
-    return "info";
+    if ((incident.anomalies as unknown[])?.length > 0) return "critical";
+    return "warning";
   };
 
   const formatDate = (iso: string) =>
@@ -113,30 +100,18 @@ export default function ApprovalsPage() {
 
   const today = new Date().toDateString();
 
-  const approvedToday = useMemo(() => {
-    try {
-      const stored = localStorage.getItem("cloudpilot_incidents");
-      if (!stored) return 0;
-      return JSON.parse(stored).filter((i: IncidentRecord) =>
-        i.status === "approved" && new Date(i.created_at).toDateString() === today
-      ).length;
-    } catch { return 0; }
-  }, [incidents]);
+  const approvedToday = useMemo(() =>
+    allIncidents.filter((i) => i.status === "approved" && new Date(i.created_at).toDateString() === today).length,
+    [allIncidents, today]);
 
-  const rejectedToday = useMemo(() => {
-    try {
-      const stored = localStorage.getItem("cloudpilot_incidents");
-      if (!stored) return 0;
-      return JSON.parse(stored).filter((i: IncidentRecord) =>
-        i.status === "rejected" && new Date(i.created_at).toDateString() === today
-      ).length;
-    } catch { return 0; }
-  }, [incidents]);
+  const rejectedToday = useMemo(() =>
+    allIncidents.filter((i) => i.status === "rejected" && new Date(i.created_at).toDateString() === today).length,
+    [allIncidents, today]);
 
   const kpiConfig = [
-    { title: "Pending Approvals", value: incidents.length, icon: ShieldAlert, color: "text-amber-400", border: "border-amber-400/20", trend: "Awaiting review"   },
-    { title: "Approved Today",    value: approvedToday,    icon: ShieldCheck, color: "text-blue-400",  border: "border-blue-400/20",  trend: "Remediated today" },
-    { title: "Rejected Today",    value: rejectedToday,    icon: ShieldX,     color: "text-red-400",   border: "border-red-400/20",   trend: "Dismissed today"  },
+    { title: "Pending Approvals", value: pendingIncidents.length, icon: ShieldAlert, color: "text-amber-400", border: "border-amber-400/20", trend: "Awaiting review"   },
+    { title: "Approved Today",    value: approvedToday,           icon: ShieldCheck, color: "text-blue-400",  border: "border-blue-400/20",  trend: "Remediated today" },
+    { title: "Rejected Today",    value: rejectedToday,           icon: ShieldX,     color: "text-red-400",   border: "border-red-400/20",   trend: "Dismissed today"  },
   ];
 
   return (
@@ -153,7 +128,7 @@ export default function ApprovalsPage() {
           </div>
           <div className="flex items-center gap-2 rounded-full bg-amber-400/10 border border-amber-400/20 px-3 py-1.5">
             <ShieldAlert className="h-4 w-4 text-amber-400" />
-            <span className="text-sm font-semibold text-amber-400">{incidents.length} pending</span>
+            <span className="text-sm font-semibold text-amber-400">{pendingIncidents.length} pending</span>
           </div>
         </div>
       </div>
@@ -180,35 +155,34 @@ export default function ApprovalsPage() {
           </div>
         )}
 
-        {!loading && incidents.length === 0 && (
+        {!loading && pendingIncidents.length === 0 && (
           <div className="rounded-xl border border-slate-800 bg-slate-900/50 py-16 text-center space-y-3">
             <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto" />
             <p className="text-slate-200 font-medium">All clear!</p>
             <p className="text-slate-500 text-sm">No incidents require approval at this time.</p>
+            <p className="text-slate-600 text-xs">Run the agent pipeline to generate new incidents.</p>
           </div>
         )}
 
-        {!loading && incidents.map((incident) => {
+        {!loading && pendingIncidents.map((incident) => {
           const sev = severityConfig[getIncidentSeverity(incident)];
           const anomalyCount = (incident.anomalies as unknown[])?.length ?? 0;
           return (
             <div key={incident.id} className="rounded-xl border border-amber-400/20 border-l-4 border-l-amber-500 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
               <div className="p-5 border-b border-slate-800/60">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-slate-500">{incident.id.slice(0, 24)}...</span>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}>{sev.label}</span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-0.5 text-xs font-medium text-amber-400">
-                        <AlertTriangle className="h-3 w-3" />needs approval
-                      </span>
-                    </div>
-                    <p className="text-base font-semibold text-slate-100">
-                      {anomalyCount > 0 ? `${anomalyCount} anomal${anomalyCount === 1 ? "y" : "ies"} detected` : "System check required"}
-                    </p>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <Clock className="h-3 w-3" />{formatDate(incident.created_at)}
-                    </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs text-slate-500">{incident.id}</span>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}>{sev.label}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2 py-0.5 text-xs font-medium text-amber-400">
+                      <AlertTriangle className="h-3 w-3" />needs approval
+                    </span>
+                  </div>
+                  <p className="text-base font-semibold text-slate-100">
+                    {anomalyCount > 0 ? `${anomalyCount} anomal${anomalyCount === 1 ? "y" : "ies"} detected` : "System check required"}
+                  </p>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <Clock className="h-3 w-3" />{formatDate(incident.created_at)}
                   </div>
                 </div>
               </div>
@@ -238,12 +212,16 @@ export default function ApprovalsPage() {
 
                 {/* Buttons */}
                 <div className="flex items-center gap-3 pt-1">
-                  <button onClick={() => handleApprove(incident.id)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-600/20">
+                  <button
+                    onClick={() => handleApprove(incident.id)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-600/20"
+                  >
                     <CheckCircle className="h-4 w-4" />Approve & Deploy
                   </button>
-                  <button onClick={() => handleReject(incident.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors">
+                  <button
+                    onClick={() => handleReject(incident.id)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                  >
                     <XCircle className="h-4 w-4" />Reject
                   </button>
                   <span className="text-xs text-slate-600 ml-2">Human approval required before deployment</span>
