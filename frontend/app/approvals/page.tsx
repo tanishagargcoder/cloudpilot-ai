@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   AlertTriangle, CheckCircle, XCircle, Clock,
   ChevronLeft, ShieldAlert, ShieldCheck, ShieldX, Download,
+  Loader2, Zap, Check,
 } from "lucide-react";
 import { SkeletonList } from "../components/Skeleton";
 import { downloadIncidentPdf } from "../lib/incidentPdf";
@@ -25,6 +26,15 @@ type IncidentRecord = {
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
+const REMEDIATION_STEPS = [
+  "Validating AI fix plan",
+  "Creating EC2 snapshot (simulated)",
+  "Applying Terraform change",
+  "Scaling instance t3.micro → t3.small",
+  "Running post-deploy health checks",
+  "Remediation complete",
+];
+
 const severityConfig = {
   critical: { color: "text-red-400",   bg: "bg-red-400/10",   label: "critical" },
   warning:  { color: "text-amber-400", bg: "bg-amber-400/10", label: "warning"  },
@@ -37,6 +47,7 @@ export default function ApprovalsPage() {
   const [loading, setLoading]                   = useState(true);
   const [toast, setToast]                       = useState<{ msg: string; kind: "success" | "reject" } | null>(null);
   const [actingId, setActingId]                 = useState<string | null>(null);
+  const [remediationStep, setRemediationStep]   = useState<number | null>(null);
 
   const showToast = (msg: string, kind: "success" | "reject") => {
     setToast({ msg, kind });
@@ -71,6 +82,11 @@ export default function ApprovalsPage() {
 
   const handleApprove = async (id: string) => {
     setActingId(id);
+    // One-click auto remediation: play the (simulated) execution steps
+    for (let s = 0; s < REMEDIATION_STEPS.length; s++) {
+      setRemediationStep(s);
+      await new Promise((r) => setTimeout(r, 700));
+    }
     try {
       await fetch(`${API_URL}/incidents/${id}/approve`, { method: "POST" });
     } catch {}
@@ -83,8 +99,9 @@ export default function ApprovalsPage() {
       }
     } catch {}
     await fetchAll();
+    setRemediationStep(null);
     setActingId(null);
-    showToast("✅ Fix approved — deployment triggered & Slack notified", "success");
+    showToast("✅ Fix approved — remediation executed & Slack notified", "success");
   };
 
   const handleReject = async (id: string) => {
@@ -251,6 +268,44 @@ export default function ApprovalsPage() {
           );
         })}
       </div>
+
+      {/* Auto-remediation progress overlay */}
+      {remediationStep !== null && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15">
+                <Zap className="h-4.5 w-4.5 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-100">Auto Remediation</h3>
+                <p className="text-[10px] text-slate-500">Executing approved fix plan</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {REMEDIATION_STEPS.map((step, i) => (
+                <div key={step} className="flex items-center gap-3">
+                  {i < remediationStep ? (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    </span>
+                  ) : i === remediationStep ? (
+                    <Loader2 className="h-5 w-5 text-blue-400 animate-spin shrink-0" />
+                  ) : (
+                    <span className="h-5 w-5 rounded-full border border-slate-700 shrink-0" />
+                  )}
+                  <span className={`text-xs ${i < remediationStep ? "text-slate-400 line-through decoration-slate-600" : i === remediationStep ? "text-slate-100 font-medium" : "text-slate-600"}`}>
+                    {step}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-600 mt-5 text-center">
+              Demo simulation — no real infrastructure is modified
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {toast && (

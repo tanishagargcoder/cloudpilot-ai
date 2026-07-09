@@ -8,7 +8,7 @@ import {
 import {
   AlertTriangle, CheckCircle, Bot, Lightbulb, Activity,
   Pause, Play, Zap, Info, CheckCircle2,
-  RefreshCw, Hash, Clock,
+  RefreshCw, Hash, Clock, Gauge,
 } from "lucide-react";
 import Link from "next/link";
 import { SkeletonChart } from "./components/Skeleton";
@@ -114,6 +114,50 @@ function CardTitle({ children, className = "" }: { children: React.ReactNode; cl
 }
 function CardContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+}
+
+function CloudHealthCard({ checks }: { checks: { label: string; ok: boolean }[] }) {
+  const score = checks.reduce((s, c) => s + (c.ok ? 20 : 10), 0);
+  const color = score >= 90 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";
+  const R = 34;
+  const CIRC = 2 * Math.PI * R;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Gauge className="h-4 w-4 text-emerald-400" />
+          Cloud Health Score
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-5">
+          <div className="relative h-24 w-24 shrink-0">
+            <svg viewBox="0 0 80 80" className="h-24 w-24 -rotate-90">
+              <circle cx="40" cy="40" r={R} fill="none" stroke="#1e293b" strokeWidth="7" />
+              <circle
+                cx="40" cy="40" r={R} fill="none"
+                stroke={color} strokeWidth="7" strokeLinecap="round"
+                strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - score / 100)}
+                style={{ transition: "stroke-dashoffset 1s ease-out" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-slate-100">{score}</span>
+              <span className="text-[9px] text-slate-500">/100</span>
+            </div>
+          </div>
+          <div className="space-y-1.5 flex-1 min-w-0">
+            {checks.map((c) => (
+              <div key={c.label} className="flex items-center justify-between text-xs">
+                <span className="text-slate-400">{c.label}</span>
+                <span className={c.ok ? "text-emerald-400" : "text-amber-400"}>{c.ok ? "✅" : "⚠️"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
@@ -385,6 +429,15 @@ export default function Dashboard() {
   ];
   const runningAgents = running ? agents.length : 0;
 
+  const latestCpu = cpuData.length > 0 ? cpuData[cpuData.length - 1].usage : 0;
+  const healthChecks = [
+    { label: "Performance",  ok: latestCpu < 70 },
+    { label: "Security",     ok: pendingCount === 0 },
+    { label: "Cost",         ok: healthyServices >= 19 },
+    { label: "Availability", ok: cpuData.length > 0 || incidents.length > 0 },
+    { label: "Reliability",  ok: incidents.filter((i) => i.status === "rejected").length === 0 },
+  ];
+
   const kpiConfig = [
     { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open`, href: "/incidents" },
     { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime`, href: "/services" },
@@ -623,7 +676,8 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CloudHealthCard checks={healthChecks} />
           <SlackActivityFeed incidents={incidents} />
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

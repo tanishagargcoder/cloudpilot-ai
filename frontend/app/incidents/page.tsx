@@ -67,17 +67,34 @@ function parseMetrics(metrics: Record<string, unknown>) {
 
 function Timeline({ incident }: { incident: IncidentRecord }) {
   const base = new Date(incident.created_at);
-  const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const at   = (secs: number) => fmt(new Date(base.getTime() + secs * 1000));
+
+  const anomalies = (incident.anomalies as { value?: number }[]) || [];
+  const peakCpu   = anomalies.length ? Math.max(...anomalies.map((a) => a.value ?? 0)) : 0;
+  const causeLine = (incident.root_cause || "")
+    .replace(/\*\*/g, "").replace(/\*/g, "")
+    .split("\n").find((l) => l.trim().length > 10)?.slice(0, 90) || "Analysis in progress";
+
   const steps = [
-    { time: fmt(base),                                  label: "Alert Triggered",   desc: "Anomaly detected in CloudWatch",        color: "bg-red-500",     done: true },
-    { time: fmt(new Date(base.getTime() + 60000)),      label: "RCA Generated",     desc: "Root cause analysis completed by AI",   color: "bg-amber-500",   done: true },
-    { time: fmt(new Date(base.getTime() + 120000)),     label: "Fix Plan Generated",desc: "AI remediation plan prepared",          color: "bg-blue-500",    done: true },
-    { time: fmt(new Date(base.getTime() + 180000)),
-      label: incident.status === "approved" ? "Approved & Deployed" : incident.status === "rejected" ? "Rejected" : "Awaiting Approval",
-      desc:  incident.status === "approved" ? "Fix successfully deployed" : incident.status === "rejected" ? "Manual intervention required" : "Pending human review",
+    { time: at(0),   label: `CPU crossed threshold${peakCpu ? ` — peaked at ${peakCpu.toFixed(1)}%` : ""}`,
+      desc: "CloudWatch metric breached the configured limit",           color: "bg-red-500",    done: true },
+    { time: at(20),  label: "Anomaly detected",
+      desc: `Monitoring Agent flagged ${anomalies.length || "potential"} anomal${anomalies.length === 1 ? "y" : "ies"}`, color: "bg-orange-500", done: true },
+    { time: at(40),  label: "RCA Agent started",
+      desc: "AI began root cause analysis on the metric window",         color: "bg-amber-500",  done: true },
+    { time: at(90),  label: "Possible cause identified",
+      desc: causeLine,                                                   color: "bg-yellow-500", done: true },
+    { time: at(120), label: "Fix suggested",
+      desc: "Remediation Agent prepared a Terraform change",             color: "bg-blue-500",   done: true },
+    { time: at(180),
+      label: incident.status === "approved" ? "Engineer approved" : incident.status === "rejected" ? "Engineer rejected" : "Awaiting engineer approval",
+      desc:  incident.status === "approved" ? "Fix approved — remediation executed" : incident.status === "rejected" ? "Fix dismissed — manual intervention chosen" : "Pending human review on the Approvals page",
       color: incident.status === "approved" ? "bg-emerald-500" : incident.status === "rejected" ? "bg-red-500" : "bg-slate-600",
       done:  incident.status !== "needs_approval",
     },
+    { time: at(200), label: "Report generated",
+      desc: "Incident report written and posted to Slack",               color: "bg-violet-500", done: !!incident.report },
   ];
   return (
     <div className="space-y-0">
