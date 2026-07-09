@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, FileText, ShieldAlert,
   BarChart3, Cloud, Bell, Settings, Server,
-  Menu, X,
+  Menu, X, LogOut,
 } from "lucide-react";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
@@ -28,9 +28,19 @@ export function Sidebar() {
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [unreadNotifs, setUnreadNotifs]         = useState(0);
   const [mobileOpen, setMobileOpen]             = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
   // Close the drawer when navigating to a new page
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    try { setUser(JSON.parse(localStorage.getItem("cloudpilot_user") || "null")); } catch {}
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem("cloudpilot_user");
+    window.location.replace("/login");
+  };
 
   useEffect(() => {
     const fetchPending = () => {
@@ -171,7 +181,25 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800 space-y-2">
+      <div className="p-4 border-t border-slate-800 space-y-3">
+        {user && (
+          <div className="flex items-center gap-2.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-[11px] font-bold text-white">
+              {user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-slate-200 truncate">{user.name}</p>
+              <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
+            </div>
+            <button
+              onClick={logout}
+              title="Log out"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-400/90">
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
