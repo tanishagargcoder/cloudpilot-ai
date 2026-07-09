@@ -34,6 +34,13 @@ export default function ApprovalsPage() {
   const [pendingIncidents, setPendingIncidents] = useState<IncidentRecord[]>([]);
   const [allIncidents, setAllIncidents]         = useState<IncidentRecord[]>([]);
   const [loading, setLoading]                   = useState(true);
+  const [toast, setToast]                       = useState<{ msg: string; kind: "success" | "reject" } | null>(null);
+  const [actingId, setActingId]                 = useState<string | null>(null);
+
+  const showToast = (msg: string, kind: "success" | "reject") => {
+    setToast({ msg, kind });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const fetchAll = async () => {
     try {
@@ -62,6 +69,7 @@ export default function ApprovalsPage() {
   }, []);
 
   const handleApprove = async (id: string) => {
+    setActingId(id);
     try {
       await fetch(`${API_URL}/incidents/${id}/approve`, { method: "POST" });
     } catch {}
@@ -74,9 +82,12 @@ export default function ApprovalsPage() {
       }
     } catch {}
     await fetchAll();
+    setActingId(null);
+    showToast("✅ Fix approved — deployment triggered & Slack notified", "success");
   };
 
   const handleReject = async (id: string) => {
+    setActingId(id);
     try {
       await fetch(`${API_URL}/incidents/${id}/reject`, { method: "POST" });
     } catch {}
@@ -88,6 +99,8 @@ export default function ApprovalsPage() {
       }
     } catch {}
     await fetchAll();
+    setActingId(null);
+    showToast("❌ Fix rejected — no changes deployed", "reject");
   };
 
   const getIncidentSeverity = (incident: IncidentRecord) => {
@@ -210,13 +223,16 @@ export default function ApprovalsPage() {
                 <div className="flex items-center gap-3 pt-1">
                   <button
                     onClick={() => handleApprove(incident.id)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-600/20"
+                    disabled={actingId !== null}
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors shadow-lg shadow-emerald-600/20"
                   >
-                    <CheckCircle className="h-4 w-4" />Approve & Deploy
+                    <CheckCircle className="h-4 w-4" />
+                    {actingId === incident.id ? "Processing..." : "Approve & Deploy"}
                   </button>
                   <button
                     onClick={() => handleReject(incident.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                    disabled={actingId !== null}
+                    className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <XCircle className="h-4 w-4" />Reject
                   </button>
@@ -227,6 +243,19 @@ export default function ApprovalsPage() {
           );
         })}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`toast-in fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-medium shadow-2xl backdrop-blur-xl ${
+            toast.kind === "success"
+              ? "border-emerald-500/30 bg-emerald-950/90 text-emerald-300"
+              : "border-red-500/30 bg-red-950/90 text-red-300"
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

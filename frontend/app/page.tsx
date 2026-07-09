@@ -41,6 +41,24 @@ type AgentStatus = {
   lastSeen: string; tasks: number;
 };
 
+function CountUp({ value }: { value: number }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    if (value <= 0) { setDisplay(value); return; }
+    const duration = 700;
+    const start = performance.now();
+    let raf: number;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / duration);
+      setDisplay(Math.round(value * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{display}</>;
+}
+
 function timeAgo(iso?: string) {
   if (!iso) return "never";
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -427,7 +445,7 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-slate-100">{kpi.value}</div>
+                  <div className="text-3xl font-bold text-slate-100"><CountUp value={kpi.value} /></div>
                   <p className="text-xs text-slate-400 mt-1">{kpi.trend}</p>
                 </CardContent>
               </Card>

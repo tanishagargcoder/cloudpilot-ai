@@ -7,8 +7,17 @@ import { AppShell } from "./components/AppShell";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CloudPilot AI",
-  description: "DevOps Assistant",
+  title: {
+    default: "CloudPilot AI — DevOps Dashboard",
+    template: "%s · CloudPilot AI",
+  },
+  description:
+    "AI-powered AWS monitoring with autonomous anomaly detection, root cause analysis, and one-click remediation — with a human in the loop.",
+  openGraph: {
+    title: "CloudPilot AI — DevOps Dashboard",
+    description: "AI agents that detect, diagnose, and fix cloud incidents.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
