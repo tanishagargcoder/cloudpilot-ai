@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   AlertTriangle, CheckCircle, XCircle, Clock,
-  ChevronLeft, ShieldAlert, ShieldCheck, ShieldX,
+  ChevronLeft, ShieldAlert, ShieldCheck, ShieldX, Download,
 } from "lucide-react";
 import { SkeletonList } from "../components/Skeleton";
+import { downloadIncidentPdf } from "../lib/incidentPdf";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -235,6 +236,13 @@ export default function ApprovalsPage() {
                     className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <XCircle className="h-4 w-4" />Reject
+                  </button>
+                  <button
+                    onClick={() => downloadIncidentPdf(incident)}
+                    title="Download incident report as PDF"
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-300 hover:bg-blue-500/20 transition-colors"
+                  >
+                    <Download className="h-4 w-4" />PDF
                   </button>
                   <span className="text-xs text-slate-600 ml-2">Human approval required before deployment</span>
                 </div>

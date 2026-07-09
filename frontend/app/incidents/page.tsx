@@ -5,8 +5,9 @@ import {
   Search, AlertTriangle, CheckCircle, XCircle, Clock,
   ChevronLeft, ChevronRight, Filter, BarChart3,
   ShieldAlert, ShieldCheck, ShieldX, Activity,
-  Cpu, TrendingUp, Database, CheckCircle2, Wrench,
+  Cpu, TrendingUp, Database, CheckCircle2, Wrench, Download,
 } from "lucide-react";
+import { downloadIncidentPdf } from "../lib/incidentPdf";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -320,7 +321,15 @@ export default function IncidentsPage() {
                   <p className="font-mono text-xs text-slate-500 mb-1">{selectedIncident.id}</p>
                   <h3 className="text-base font-semibold text-slate-100">Incident Details</h3>
                 </div>
-                <button onClick={() => setSelectedIncident(null)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 transition-colors">✕</button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => downloadIncidentPdf(selectedIncident)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/20 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download PDF
+                  </button>
+                  <button onClick={() => setSelectedIncident(null)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 transition-colors">✕</button>
+                </div>
               </div>
               <div className="p-5 space-y-5">
                 <div className="flex items-center gap-2 flex-wrap">
