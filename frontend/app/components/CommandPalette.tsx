@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   LayoutDashboard, FileText, ShieldAlert, BarChart3, Server,
   DollarSign, ShieldCheck, Bell, Settings, ScrollText,
-  FlaskConical, Rocket, LogOut, Search, CornerDownLeft, AlertTriangle,
+  Rocket, LogOut, Search, CornerDownLeft, AlertTriangle,
 } from "lucide-react";
 import { logAudit } from "../lib/audit";
 
@@ -65,7 +65,6 @@ export function CommandPalette() {
     { group: "Pages", label: "Notifications", icon: Bell,            run: () => go("/notifications") },
     { group: "Pages", label: "Settings",      icon: Settings,        run: () => go("/settings") },
     { group: "Pages", label: "Audit Logs",    icon: ScrollText,      run: () => go("/audit") },
-    { group: "Actions", label: "Simulate Incident", hint: "runs demo pipeline", icon: FlaskConical, run: () => go("/?simulate=true") },
     { group: "Actions", label: "Run Agent Pipeline", hint: "live AWS scan", icon: Rocket, run: () => go("/?run=true") },
     { group: "Actions", label: "Log out", icon: LogOut, run: () => {
         logAudit("Signed out");

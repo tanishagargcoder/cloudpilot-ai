@@ -162,7 +162,7 @@ def get_services_health():
 
 
 @app.post("/run-agent")
-def run_agent(demo: bool = False):
+def run_agent():
     state = {
         "metrics": {},
         "anomalies": [],
@@ -171,32 +171,7 @@ def run_agent(demo: bool = False):
         "report": None,
         "requires_approval": False,
     }
-    if demo:
-        # Demo mode: inject a realistic CPU spike so the full
-        # RCA -> Fix -> Approval flow can be demonstrated on demand
-        now = datetime.utcnow()
-        instance_id = os.getenv("EC2_INSTANCE_ID", "i-demo000000000000")
-        state["anomalies"] = [
-            {
-                "metric": "CPUUtilization",
-                "value": 87.4,
-                "timestamp": str(now - timedelta(minutes=10)),
-                "resource": instance_id,
-            },
-            {
-                "metric": "CPUUtilization",
-                "value": 92.1,
-                "timestamp": str(now - timedelta(minutes=5)),
-                "resource": instance_id,
-            },
-        ]
-        state["metrics"] = {"datapoints": [
-            {"Average": 12.0, "Timestamp": str(now - timedelta(minutes=20))},
-            {"Average": 87.4, "Timestamp": str(now - timedelta(minutes=10))},
-            {"Average": 92.1, "Timestamp": str(now - timedelta(minutes=5))},
-        ], "demo": True}
-    else:
-        state = detect_anomalies(state)
+    state = detect_anomalies(state)
     state = analyze_root_cause(state)
     state = generate_fix(state)
     state = write_report(state)

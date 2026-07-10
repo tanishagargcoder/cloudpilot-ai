@@ -356,12 +356,9 @@ export default function Dashboard() {
   // Command palette actions arrive as query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("simulate") === "true") {
+    if (params.get("run") === "true") {
       window.history.replaceState({}, "", "/");
-      runAgent(true);
-    } else if (params.get("run") === "true") {
-      window.history.replaceState({}, "", "/");
-      runAgent(false);
+      runAgent();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -404,12 +401,12 @@ export default function Dashboard() {
   }, [events]);
 
   // ── REST ONLY - No WebSocket for pipeline ────────────────────────────────
-  const runAgent = async (demo = false) => {
+  const runAgent = async () => {
     if (running) return;
     setEvents([]);
     setRunning(true);
-    setRunStatus(demo ? "Simulating incident..." : "Calling backend...");
-    logAudit(demo ? "Ran demo incident simulation" : "Ran agent pipeline");
+    setRunStatus("Calling backend...");
+    logAudit("Ran agent pipeline");
 
     try {
       setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
@@ -417,7 +414,7 @@ export default function Dashboard() {
       const controller = new AbortController();
       const timeoutId  = setTimeout(() => controller.abort(), 180000);
 
-      const response = await fetch(`${API_URL}/run-agent${demo ? "?demo=true" : ""}`, {
+      const response = await fetch(`${API_URL}/run-agent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -564,12 +561,7 @@ export default function Dashboard() {
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
               <RefreshCw className="h-3.5 w-3.5" /> Refresh Now
             </button>
-            <button onClick={() => runAgent(true)} disabled={running}
-              title="Injects a simulated CPU spike to demo the full RCA → Fix → Approval flow"
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors border ${running ? "cursor-not-allowed bg-slate-800 text-slate-500 border-slate-700" : "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"}`}>
-              🧪 Simulate Incident
-            </button>
-            <button onClick={() => runAgent(false)} disabled={running}
+            <button onClick={() => runAgent()} disabled={running}
               className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}>
               {running ? `⏳ ${runStatus || "Running..."}` : "🚀 Run Agent Pipeline"}
             </button>
