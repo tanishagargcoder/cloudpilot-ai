@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   LayoutDashboard, FileText, ShieldAlert,
   BarChart3, Cloud, Bell, Settings, Server,
-  Menu, X, LogOut,
+  Menu, X, LogOut, DollarSign, ShieldCheck,
 } from "lucide-react";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
@@ -17,6 +17,8 @@ const navItems = [
   { label: "Approvals",  href: "/approvals",  icon: ShieldAlert     },
   { label: "Analytics",  href: "/analytics",  icon: BarChart3       },
   { label: "Services",   href: "/services",   icon: Server          },
+  { label: "Cost",       href: "/cost",       icon: DollarSign      },
+  { label: "Security",   href: "/security",   icon: ShieldCheck     },
 ];
 const systemItems = [
   { label: "Notifications", href: "/notifications", icon: Bell     },

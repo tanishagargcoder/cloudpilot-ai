@@ -225,6 +225,172 @@ def run_agent(demo: bool = False):
     incident.pop("_id", None)
     return incident
 
+DEMO_COST_RECS = [
+    {"type": "EC2 Instance", "resource": "i-0b3f2a91c4e7d8f01", "issue": "CPU below 5% for 14 days (idle worker)",
+     "action": "Downsize t3.medium to t3.small", "monthly_savings": 15.18, "severity": "high"},
+    {"type": "EBS Volume", "resource": "vol-0f2a9c13b7e64d215", "issue": "Unattached 100 GB gp3 volume",
+     "action": "Snapshot and delete the volume", "monthly_savings": 8.00, "severity": "medium"},
+    {"type": "Elastic IP", "resource": "eipalloc-09d13c2ab8f7e6d41", "issue": "Not associated with any instance",
+     "action": "Release the unused address", "monthly_savings": 3.65, "severity": "low"},
+    {"type": "RDS Database", "resource": "db-reports-dev", "issue": "No connections in the last 30 days",
+     "action": "Stop or delete the dev database", "monthly_savings": 24.82, "severity": "high"},
+]
+
+
+@app.get("/cost/recommendations")
+def cost_recommendations(demo: bool = False):
+    recs = []
+    simulated = demo
+    if not demo:
+        try:
+            ec2 = boto3.client("ec2", region_name=os.getenv("AWS_REGION", "ap-south-1"))
+
+            volumes = ec2.describe_volumes(
+                Filters=[{"Name": "status", "Values": ["available"]}]
+            )["Volumes"]
+            for v in volumes:
+                recs.append({
+                    "type": "EBS Volume", "resource": v["VolumeId"],
+                    "issue": f"Unattached {v['Size']} GB volume",
+                    "action": "Snapshot and delete the volume",
+                    "monthly_savings": round(v["Size"] * 0.08, 2),
+                    "severity": "medium",
+                })
+
+            for a in ec2.describe_addresses()["Addresses"]:
+                if "AssociationId" not in a:
+                    recs.append({
+                        "type": "Elastic IP", "resource": a.get("AllocationId", a.get("PublicIp", "unknown")),
+                        "issue": "Not associated with any instance",
+                        "action": "Release the unused address",
+                        "monthly_savings": 3.65,
+                        "severity": "low",
+                    })
+
+            stopped = ec2.describe_instances(
+                Filters=[{"Name": "instance-state-name", "Values": ["stopped"]}]
+            )
+            for r in stopped["Reservations"]:
+                for i in r["Instances"]:
+                    recs.append({
+                        "type": "EC2 Instance", "resource": i["InstanceId"],
+                        "issue": "Stopped instance still incurs EBS storage cost",
+                        "action": "Create an AMI and terminate, or restart if needed",
+                        "monthly_savings": 8.00,
+                        "severity": "medium",
+                    })
+        except Exception as e:
+            print(f"Cost scan failed, using demo data: {e}")
+            simulated = True
+
+    if simulated:
+        recs = DEMO_COST_RECS
+
+    total = round(sum(r["monthly_savings"] for r in recs), 2)
+    return {
+        "simulated": simulated,
+        "total_monthly_savings": total,
+        "recommendations": recs,
+        "scanned_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+DEMO_SECURITY_FINDINGS = [
+    {"category": "S3 Bucket", "resource": "cloudpilot-public-assets", "issue": "Bucket allows public read access",
+     "recommendation": "Enable Block Public Access unless static hosting is required", "severity": "critical"},
+    {"category": "Security Group", "resource": "sg-0a1b2c3d4e5f6a7b8", "issue": "Port 22 (SSH) open to the world (0.0.0.0/0)",
+     "recommendation": "Restrict SSH to your IP or use SSM Session Manager", "severity": "critical"},
+    {"category": "IAM", "resource": "user/deploy-bot", "issue": "User has no MFA device configured",
+     "recommendation": "Enable MFA for all IAM users", "severity": "medium"},
+    {"category": "IAM", "resource": "role/legacy-admin", "issue": "Role has AdministratorAccess policy attached",
+     "recommendation": "Apply least-privilege permissions", "severity": "medium"},
+]
+
+
+@app.get("/security/findings")
+def security_findings(demo: bool = False):
+    findings = []
+    checks_run = 0
+    simulated = demo
+
+    if not demo:
+        region = os.getenv("AWS_REGION", "ap-south-1")
+
+        try:
+            ec2 = boto3.client("ec2", region_name=region)
+            for sg in ec2.describe_security_groups()["SecurityGroups"]:
+                for perm in sg.get("IpPermissions", []):
+                    for ip in perm.get("IpRanges", []):
+                        if ip.get("CidrIp") == "0.0.0.0/0":
+                            port = perm.get("FromPort")
+                            sensitive = port in (22, 3389, 3306, 5432, 27017)
+                            findings.append({
+                                "category": "Security Group",
+                                "resource": sg["GroupId"],
+                                "issue": f"Port {port if port is not None else 'ALL'} open to the world (0.0.0.0/0)",
+                                "recommendation": "Restrict to a specific IP range or VPN CIDR",
+                                "severity": "critical" if sensitive else "medium",
+                            })
+            checks_run += 1
+        except Exception as e:
+            print(f"Security group check failed: {e}")
+
+        try:
+            s3 = boto3.client("s3", region_name=region)
+            for bucket in s3.list_buckets()["Buckets"][:10]:
+                name = bucket["Name"]
+                try:
+                    pab = s3.get_public_access_block(Bucket=name)["PublicAccessBlockConfiguration"]
+                    if not all(pab.values()):
+                        findings.append({
+                            "category": "S3 Bucket", "resource": name,
+                            "issue": "Public access is not fully blocked",
+                            "recommendation": "Enable all four Block Public Access settings",
+                            "severity": "critical",
+                        })
+                except Exception:
+                    findings.append({
+                        "category": "S3 Bucket", "resource": name,
+                        "issue": "No Public Access Block configuration found",
+                        "recommendation": "Configure Block Public Access for this bucket",
+                        "severity": "medium",
+                    })
+            checks_run += 1
+        except Exception as e:
+            print(f"S3 check failed: {e}")
+
+        try:
+            iam = boto3.client("iam")
+            summary = iam.get_account_summary()["SummaryMap"]
+            if summary.get("AccountMFAEnabled", 1) == 0:
+                findings.append({
+                    "category": "IAM", "resource": "root account",
+                    "issue": "Root account has no MFA enabled",
+                    "recommendation": "Enable MFA on the root account immediately",
+                    "severity": "critical",
+                })
+            checks_run += 1
+        except Exception as e:
+            print(f"IAM check failed: {e}")
+
+        if checks_run == 0:
+            simulated = True
+
+    if simulated:
+        findings = DEMO_SECURITY_FINDINGS
+        checks_run = 3
+
+    weights = {"critical": 15, "medium": 7, "low": 3}
+    score = max(0, 100 - sum(weights.get(f["severity"], 5) for f in findings))
+    return {
+        "simulated": simulated,
+        "score": score,
+        "checks_run": checks_run,
+        "findings": findings,
+        "scanned_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 class ChatRequest(BaseModel):
     message: str
     context: str = ""
