@@ -7,7 +7,9 @@ import {
   LayoutDashboard, FileText, ShieldAlert,
   BarChart3, Cloud, Bell, Settings, Server,
   Menu, X, LogOut, DollarSign, ShieldCheck,
+  ScrollText, Search,
 } from "lucide-react";
+import { logAudit } from "../lib/audit";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
@@ -21,8 +23,9 @@ const navItems = [
   { label: "Security",   href: "/security",   icon: ShieldCheck     },
 ];
 const systemItems = [
-  { label: "Notifications", href: "/notifications", icon: Bell     },
-  { label: "Settings",      href: "/settings",      icon: Settings },
+  { label: "Notifications", href: "/notifications", icon: Bell       },
+  { label: "Audit Logs",    href: "/audit",         icon: ScrollText },
+  { label: "Settings",      href: "/settings",      icon: Settings   },
 ];
 
 export function Sidebar() {
@@ -40,6 +43,7 @@ export function Sidebar() {
   }, []);
 
   const logout = () => {
+    logAudit("Signed out");
     localStorage.removeItem("cloudpilot_user");
     window.location.replace("/login");
   };
@@ -169,6 +173,18 @@ export function Sidebar() {
           aria-label="Close menu"
         >
           <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Search / Command palette trigger */}
+      <div className="px-3 pt-3">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("cloudpilot:cmdk"))}
+          className="w-full flex items-center gap-2.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 hover:border-slate-700 transition-colors"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-[9px] text-slate-500">Ctrl K</kbd>
         </button>
       </div>
 

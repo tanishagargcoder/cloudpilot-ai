@@ -8,11 +8,12 @@ import {
 import {
   AlertTriangle, CheckCircle, Bot, Lightbulb, Activity,
   Pause, Play, Zap, Info, CheckCircle2,
-  RefreshCw, Hash, Clock, Gauge,
+  RefreshCw, Hash, Clock, Gauge, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { SkeletonChart } from "./components/Skeleton";
 import { parseServerDate } from "./lib/time";
+import { logAudit } from "./lib/audit";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
@@ -115,6 +116,79 @@ function CardTitle({ children, className = "" }: { children: React.ReactNode; cl
 }
 function CardContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
+}
+
+function InsightsCard({ incidents, cpuData, pendingCount }: {
+  incidents: IncidentRecord[];
+  cpuData: { time: string; usage: number }[];
+  pendingCount: number;
+}) {
+  const [savings, setSavings] = useState<number | null>(null);
+  const [criticalFindings, setCriticalFindings] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/cost/recommendations`)
+      .then((r) => r.json())
+      .then((d) => setSavings(d.total_monthly_savings ?? null))
+      .catch(() => {});
+    fetch(`${API_URL}/security/findings`)
+      .then((r) => r.json())
+      .then((d) => setCriticalFindings((d.findings || []).filter((f: any) => f.severity === "critical").length))
+      .catch(() => {});
+  }, []);
+
+  const today = new Date().toDateString();
+  const todayIncidents = incidents.filter((i) => parseServerDate(i.created_at).toDateString() === today).length;
+  const first = cpuData[0]?.usage ?? 0;
+  const last = cpuData[cpuData.length - 1]?.usage ?? 0;
+  const cpuDelta = first > 0 ? Math.round(((last - first) / first) * 100) : 0;
+
+  const insights: string[] = [
+    cpuData.length > 0
+      ? `CPU is at ${last.toFixed(1)}%${cpuDelta !== 0 ? ` (${cpuDelta > 0 ? "+" : ""}${cpuDelta}% over the last hour)` : " and stable"}`
+      : "Waiting for CloudWatch metrics...",
+    `${todayIncidents} incident${todayIncidents === 1 ? "" : "s"} recorded today`,
+  ];
+  if (pendingCount > 0) insights.push(`${pendingCount} fix plan${pendingCount === 1 ? "" : "s"} awaiting your approval`);
+  if (savings !== null && savings > 0) insights.push(`$${savings.toFixed(2)}/month of potential cost savings found`);
+  if (criticalFindings !== null && criticalFindings > 0) insights.push(`${criticalFindings} critical security finding${criticalFindings === 1 ? "" : "s"} open`);
+
+  const recommendations: { label: string; href: string }[] = [];
+  if (criticalFindings !== null && criticalFindings > 0) recommendations.push({ label: "Fix critical security findings", href: "/security" });
+  if (pendingCount > 0) recommendations.push({ label: "Review pending approvals", href: "/approvals" });
+  if (savings !== null && savings > 0) recommendations.push({ label: "Release unused resources", href: "/cost" });
+  if (recommendations.length === 0) recommendations.push({ label: "All clear — run a pipeline scan to stay ahead", href: "/" });
+
+  return (
+    <Card className="border-violet-500/20">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-violet-400" />
+          Today's AI Insights
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            {insights.map((line, i) => (
+              <p key={i} className="text-xs text-slate-300 flex items-start gap-2">
+                <span className="text-violet-400 mt-0.5">•</span>{line}
+              </p>
+            ))}
+          </div>
+          <div className="space-y-1.5 sm:border-l sm:border-slate-800 sm:pl-4">
+            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Recommendations</p>
+            {recommendations.map((rec) => (
+              <Link key={rec.label} href={rec.href}
+                className="block text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                → {rec.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function CloudHealthCard({ checks }: { checks: { label: string; ok: boolean }[] }) {
@@ -279,6 +353,19 @@ export default function Dashboard() {
 
   useEffect(() => { fetchCpu(); fetchIncidents(); fetchMemory(); fetchNetwork(); }, []);
 
+  // Command palette actions arrive as query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("simulate") === "true") {
+      window.history.replaceState({}, "", "/");
+      runAgent(true);
+    } else if (params.get("run") === "true") {
+      window.history.replaceState({}, "", "/");
+      runAgent(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!autoRefresh) return;
     const iv = setInterval(() => { fetchCpu(); fetchIncidents(); fetchMemory(); fetchNetwork(); }, 15000);
@@ -322,6 +409,7 @@ export default function Dashboard() {
     setEvents([]);
     setRunning(true);
     setRunStatus(demo ? "Simulating incident..." : "Calling backend...");
+    logAudit(demo ? "Ran demo incident simulation" : "Ran agent pipeline");
 
     try {
       setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
@@ -487,6 +575,8 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+        <InsightsCard incidents={incidents} cpuData={cpuData} pendingCount={pendingCount} />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {kpiConfig.map((kpi) => {

@@ -6,6 +6,7 @@ import { Cloud } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { AIChatbot } from "./AIChatbot";
 import { KeepAlive } from "./KeepAlive";
+import { CommandPalette } from "./CommandPalette";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -49,6 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <AIChatbot />
+      <CommandPalette />
     </>
   );
 }

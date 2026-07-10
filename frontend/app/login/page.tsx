@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cloud, Mail, Lock, LogIn, Sparkles, Eye, EyeOff } from "lucide-react";
+import { logAudit } from "../lib/audit";
 
 const DEMO_EMAIL = "demo@cloudpilot.ai";
 const DEMO_PASSWORD = "demo123";
@@ -23,6 +24,7 @@ export default function LoginPage() {
       "cloudpilot_user",
       JSON.stringify({ name, email: userEmail, loginTime: new Date().toISOString() })
     );
+    logAudit("Signed in", userEmail, name);
     window.location.replace("/");
   };
 

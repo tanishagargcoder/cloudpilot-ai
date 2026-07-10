@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { downloadIncidentPdf } from "../lib/incidentPdf";
 import { parseServerDate } from "../lib/time";
+import { logAudit } from "../lib/audit";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -341,7 +342,7 @@ export default function IncidentsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => downloadIncidentPdf(selectedIncident)}
+                    onClick={() => { downloadIncidentPdf(selectedIncident); logAudit("Downloaded PDF report", selectedIncident.id); }}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/20 transition-colors"
                   >
                     <Download className="h-3.5 w-3.5" /> Download PDF

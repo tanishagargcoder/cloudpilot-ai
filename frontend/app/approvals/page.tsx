@@ -9,6 +9,7 @@ import {
 import { SkeletonList } from "../components/Skeleton";
 import { downloadIncidentPdf } from "../lib/incidentPdf";
 import { parseServerDate } from "../lib/time";
+import { logAudit } from "../lib/audit";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -102,6 +103,7 @@ export default function ApprovalsPage() {
     await fetchAll();
     setRemediationStep(null);
     setActingId(null);
+    logAudit("Approved remediation", id);
     showToast("✅ Fix approved — remediation executed & Slack notified", "success");
   };
 
@@ -119,6 +121,7 @@ export default function ApprovalsPage() {
     } catch {}
     await fetchAll();
     setActingId(null);
+    logAudit("Rejected remediation", id);
     showToast("❌ Fix rejected — no changes deployed", "reject");
   };
 
@@ -256,7 +259,7 @@ export default function ApprovalsPage() {
                     <XCircle className="h-4 w-4" />Reject
                   </button>
                   <button
-                    onClick={() => downloadIncidentPdf(incident)}
+                    onClick={() => { downloadIncidentPdf(incident); logAudit("Downloaded PDF report", incident.id); }}
                     title="Download incident report as PDF"
                     className="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-300 hover:bg-blue-500/20 transition-colors"
                   >
