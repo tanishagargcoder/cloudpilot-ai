@@ -201,8 +201,7 @@ def run_agent(demo: bool = False):
     state = generate_fix(state)
     state = write_report(state)
 
-    # Save to MongoDB
-    from datetime import datetime
+    # Save to MongoDB (datetime already imported at module level)
     incident = {
         **state,
         "id": f"incident-{int(datetime.utcnow().timestamp() * 1000)}",
