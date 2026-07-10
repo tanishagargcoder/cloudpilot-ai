@@ -9,6 +9,7 @@ import {
   BarChart3, AlertTriangle, ShieldCheck, Clock,
   Activity, Cpu, ArrowLeft, Timer, Server,
 } from "lucide-react";
+import { parseServerDate } from "../lib/time";
 
 type IncidentRecord = {
   id: string;
@@ -60,10 +61,10 @@ function calcMTTR(incidents: IncidentRecord[]): string {
   if (resolved.length === 0) return "N/A";
 
   const totalMs = resolved.reduce((sum, inc) => {
-    const created = new Date(inc.created_at).getTime();
+    const created = parseServerDate(inc.created_at).getTime();
     // Use resolved_at if available, otherwise simulate ~3 min pipeline time
     const resolved_at = inc.resolved_at
-      ? new Date(inc.resolved_at).getTime()
+      ? parseServerDate(inc.resolved_at).getTime()
       : created + 3 * 60 * 1000;
     return sum + (resolved_at - created);
   }, 0);
@@ -147,7 +148,7 @@ export default function AnalyticsPage() {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
       const dateStr = d.toDateString();
-      const dayInc = incidents.filter((inc) => new Date(inc.created_at).toDateString() === dateStr);
+      const dayInc = incidents.filter((inc) => parseServerDate(inc.created_at).toDateString() === dateStr);
       return {
         day: days[d.getDay()],
         total:    dayInc.length,

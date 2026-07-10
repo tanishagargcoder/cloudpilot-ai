@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { parseServerDate } from "./time";
 
 type IncidentLike = {
   id: string;
@@ -48,7 +49,7 @@ export function downloadIncidentPdf(incident: IncidentLike) {
   const anomalyCount = incident.anomalies?.length ?? 0;
   const meta: [string, string][] = [
     ["Incident ID", incident.id],
-    ["Created", new Date(incident.created_at).toLocaleString()],
+    ["Created", parseServerDate(incident.created_at).toLocaleString()],
     ["Status", incident.status.replace(/_/g, " ").toUpperCase()],
     ["Anomalies detected", String(anomalyCount)],
   ];

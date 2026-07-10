@@ -3,7 +3,7 @@ import requests
 from database import save_incident, get_incidents, save_notification, update_incident_status
 from datetime import datetime
 import boto3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -205,7 +205,7 @@ def run_agent(demo: bool = False):
     incident = {
         **state,
         "id": f"incident-{int(datetime.utcnow().timestamp() * 1000)}",
-        "created_at": datetime.now().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "status": "needs_approval" if state["requires_approval"] else "healthy",
         "anomalies": state.get("anomalies", []),
     }
@@ -220,7 +220,7 @@ def run_agent(demo: bool = False):
         "time": datetime.now().strftime("%d %b, %I:%M %p"),
         "read": False,
         "type": "approval" if state["requires_approval"] else "incident",
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     })
     incident.pop("_id", None)
     return incident

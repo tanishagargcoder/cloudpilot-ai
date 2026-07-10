@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { SkeletonList } from "../components/Skeleton";
 import { downloadIncidentPdf } from "../lib/incidentPdf";
+import { parseServerDate } from "../lib/time";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -127,16 +128,16 @@ export default function ApprovalsPage() {
   };
 
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    parseServerDate(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const today = new Date().toDateString();
 
   const approvedToday = useMemo(() =>
-    allIncidents.filter((i) => i.status === "approved" && new Date(i.created_at).toDateString() === today).length,
+    allIncidents.filter((i) => i.status === "approved" && parseServerDate(i.created_at).toDateString() === today).length,
     [allIncidents, today]);
 
   const rejectedToday = useMemo(() =>
-    allIncidents.filter((i) => i.status === "rejected" && new Date(i.created_at).toDateString() === today).length,
+    allIncidents.filter((i) => i.status === "rejected" && parseServerDate(i.created_at).toDateString() === today).length,
     [allIncidents, today]);
 
   const kpiConfig = [

@@ -8,6 +8,7 @@ import {
   Cpu, TrendingUp, Database, CheckCircle2, Wrench, Download,
 } from "lucide-react";
 import { downloadIncidentPdf } from "../lib/incidentPdf";
+import { parseServerDate } from "../lib/time";
 
 type IncidentStatus = "healthy" | "needs_approval" | "approved" | "rejected";
 
@@ -66,7 +67,7 @@ function parseMetrics(metrics: Record<string, unknown>) {
 }
 
 function Timeline({ incident }: { incident: IncidentRecord }) {
-  const base = new Date(incident.created_at);
+  const base = parseServerDate(incident.created_at);
   const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const at   = (secs: number) => fmt(new Date(base.getTime() + secs * 1000));
 
@@ -202,7 +203,7 @@ export default function IncidentsPage() {
   ];
 
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    parseServerDate(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="text-slate-100">

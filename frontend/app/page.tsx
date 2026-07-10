@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SkeletonChart } from "./components/Skeleton";
+import { parseServerDate } from "./lib/time";
 
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
@@ -61,7 +62,7 @@ function CountUp({ value }: { value: number }) {
 
 function timeAgo(iso?: string) {
   if (!iso) return "never";
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  const mins = Math.floor((Date.now() - parseServerDate(iso).getTime()) / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -162,7 +163,7 @@ function CloudHealthCard({ checks }: { checks: { label: string; ok: boolean }[] 
 
 function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
   const activities = incidents.slice(0, 5).flatMap((inc) => {
-    const base = new Date(inc.created_at);
+    const base = parseServerDate(inc.created_at);
     const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
     const rows = [
       { time: fmt(base),                                   label: "Incident Created",    color: "bg-red-500"     },
@@ -715,7 +716,7 @@ export default function Dashboard() {
                             {(inc.root_cause || "—").replace(/\*\*/g, "").slice(0, 50)}
                           </td>
                           <td className="py-2 text-slate-500 text-xs whitespace-nowrap">
-                            {new Date(inc.created_at).toLocaleTimeString()}
+                            {parseServerDate(inc.created_at).toLocaleTimeString()}
                           </td>
                         </tr>
                       );

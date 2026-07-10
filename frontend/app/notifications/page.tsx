@@ -6,6 +6,7 @@ import {
   ShieldCheck, MessageSquare, Trash2, Filter, CheckCircle2,
   ArrowLeft, ShieldAlert, CheckSquare, Square, MailOpen, Mail,
 } from "lucide-react";
+import { parseServerDate } from "../lib/time";
 
 type Notification = {
   id: string;
@@ -66,8 +67,8 @@ export default function NotificationsPage() {
       const localOnly = localNotifs.filter((n) => !apiIds.has(n.id));
 
       const all = [...merged, ...localOnly].sort((a, b) => {
-        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        const ta = a.created_at ? parseServerDate(a.created_at).getTime() : 0;
+        const tb = b.created_at ? parseServerDate(b.created_at).getTime() : 0;
         return tb - ta;
       });
 
@@ -239,7 +240,11 @@ export default function NotificationsPage() {
                       <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.message}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-[10px] text-slate-600 mr-1">{notif.time}</span>
+                      <span className="text-[10px] text-slate-600 mr-1">
+                        {notif.created_at
+                          ? parseServerDate(notif.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true })
+                          : notif.time}
+                      </span>
                       {!notif.read && (
                         <button onClick={() => markOneRead(notif.id)} className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-400/10 transition-colors" title="Mark as read">
                           <CheckCircle2 className="h-3.5 w-3.5" />
