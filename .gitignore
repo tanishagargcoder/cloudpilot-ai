@@ -17,3 +17,7 @@ frontend/.next/
 
 # VS Code
 .vscode/
+# Local AI/editor tooling
+.claude/
+CLAUDE.md
+AGENTS.md
