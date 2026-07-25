@@ -21,3 +21,5 @@ frontend/.next/
 .claude/
 CLAUDE.md
 AGENTS.md
+*.tfvars
+!*.tfvars.example

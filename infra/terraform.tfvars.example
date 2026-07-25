@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (gitignored) and put your own public IP here.
+# Find it with:  curl https://checkip.amazonaws.com
+#
+# 13.233.177.0/29 is EC2 Instance Connect for ap-south-1 and is already the
+# default, so browser SSH from the AWS console keeps working even if your
+# ISP rotates your home IP.
+
+ssh_allowed_cidrs = [
+  "203.0.113.10/32", # your public IP
+  "13.233.177.0/29", # EC2 Instance Connect (ap-south-1)
+]

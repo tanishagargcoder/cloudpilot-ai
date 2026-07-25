@@ -11,6 +11,15 @@ data "aws_subnets" "default" {
 }
 
 # ── Security group ─────────────────────────────────────────────────────────────
+# Never use 0.0.0.0/0 here — a world-open port 22 gets brute-forced within hours,
+# and a hijacked instance runs up the bill. Add your own IP via terraform.tfvars
+# (gitignored) rather than hardcoding it, so it stays out of this public repo.
+variable "ssh_allowed_cidrs" {
+  description = "CIDRs allowed to SSH into the monitored instance."
+  type        = list(string)
+  default     = ["13.233.177.0/29"] # EC2 Instance Connect (ap-south-1) — browser SSH from the console
+}
+
 resource "aws_security_group" "agent_target" {
   name        = "devops-ai-agent-target-sg"
   description = "Allow SSH and HTTP inbound for agent monitoring"
@@ -20,7 +29,7 @@ resource "aws_security_group" "agent_target" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.ssh_allowed_cidrs
   }
 
   egress {
