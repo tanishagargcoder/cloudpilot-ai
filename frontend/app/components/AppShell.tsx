@@ -10,19 +10,19 @@ import { CommandPalette } from "./CommandPalette";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLogin = pathname === "/login";
+  // Landing and login render full-screen, without the dashboard shell
+  const isPublic = pathname === "/login" || pathname === "/welcome";
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    if (isLogin) return;
+    if (isPublic) return;
     // Demo-grade auth: session lives in localStorage
     const user = localStorage.getItem("cloudpilot_user");
-    if (!user) window.location.replace("/login");
+    if (!user) window.location.replace("/welcome");
     else setAuthed(true);
-  }, [pathname, isLogin]);
+  }, [pathname, isPublic]);
 
-  // Login page renders full-screen without the app shell
-  if (isLogin) return <>{children}</>;
+  if (isPublic) return <>{children}</>;
 
   // Splash while the session check runs (avoids flashing protected content)
   if (!authed) {
