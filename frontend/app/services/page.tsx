@@ -66,7 +66,7 @@ export default function ServicesPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
-        <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
+        <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
           <ChevronLeft className="h-4 w-4" /> Dashboard
         </a>
         <h1 className="text-2xl font-bold text-slate-100">

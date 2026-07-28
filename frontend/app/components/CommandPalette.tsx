@@ -55,7 +55,7 @@ export function CommandPalette() {
   }, []);
 
   const baseItems: Item[] = [
-    { group: "Pages", label: "Dashboard",     icon: LayoutDashboard, run: () => go("/") },
+    { group: "Pages", label: "Dashboard",     icon: LayoutDashboard, run: () => go("/dashboard") },
     { group: "Pages", label: "Incidents",     icon: FileText,        run: () => go("/incidents") },
     { group: "Pages", label: "Approvals",     icon: ShieldAlert,     run: () => go("/approvals") },
     { group: "Pages", label: "Analytics",     icon: BarChart3,       run: () => go("/analytics") },
@@ -65,11 +65,11 @@ export function CommandPalette() {
     { group: "Pages", label: "Notifications", icon: Bell,            run: () => go("/notifications") },
     { group: "Pages", label: "Settings",      icon: Settings,        run: () => go("/settings") },
     { group: "Pages", label: "Audit Logs",    icon: ScrollText,      run: () => go("/audit") },
-    { group: "Actions", label: "Run Agent Pipeline", hint: "live AWS scan", icon: Rocket, run: () => go("/?run=true") },
+    { group: "Actions", label: "Run Agent Pipeline", hint: "live AWS scan", icon: Rocket, run: () => go("/dashboard?run=true") },
     { group: "Actions", label: "Log out", icon: LogOut, run: () => {
         logAudit("Signed out");
         localStorage.removeItem("cloudpilot_user");
-        window.location.replace("/login");
+        window.location.replace("/");
       } },
   ];
 
@@ -146,10 +146,10 @@ export function CommandPalette() {
                   onClick={item.run}
                   onMouseEnter={() => setSelected(i)}
                   className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
-                    i === selected ? "bg-blue-600/15 text-blue-300" : "text-slate-300 hover:bg-slate-800/60"
+                    i === selected ? "bg-emerald-600/15 text-emerald-300" : "text-slate-300 hover:bg-slate-800/60"
                   }`}
                 >
-                  <Icon className={`h-4 w-4 shrink-0 ${i === selected ? "text-blue-400" : "text-slate-500"}`} />
+                  <Icon className={`h-4 w-4 shrink-0 ${i === selected ? "text-emerald-400" : "text-slate-500"}`} />
                   <span className="flex-1 text-sm truncate">{item.label}</span>
                   {item.hint && <span className="text-[10px] text-slate-600 truncate max-w-[45%]">{item.hint}</span>}
                   {i === selected && <CornerDownLeft className="h-3 w-3 text-slate-600 shrink-0" />}

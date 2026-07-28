@@ -30,14 +30,14 @@ const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 const statusConfig: Record<IncidentStatus, { color: string; bg: string; label: string; icon: typeof Activity; border: string }> = {
   healthy:       { color: "text-emerald-400", bg: "bg-emerald-400/10", label: "healthy",      icon: CheckCircle,  border: "border-emerald-400/30" },
   needs_approval:{ color: "text-amber-400",  bg: "bg-amber-400/10",  label: "needs approval",icon: ShieldAlert,  border: "border-amber-400/30"   },
-  approved:      { color: "text-blue-400",   bg: "bg-blue-400/10",   label: "approved",      icon: ShieldCheck,  border: "border-blue-400/30"    },
+  approved:      { color: "text-emerald-400",   bg: "bg-emerald-400/10",   label: "approved",      icon: ShieldCheck,  border: "border-emerald-400/30"    },
   rejected:      { color: "text-red-400",    bg: "bg-red-400/10",    label: "rejected",      icon: ShieldX,      border: "border-red-400/30"     },
 };
 
 const severityConfig = {
   critical: { color: "text-red-400",   bg: "bg-red-400/10",   label: "critical", border: "border-l-red-500"    },
   warning:  { color: "text-amber-400", bg: "bg-amber-400/10", label: "warning",  border: "border-l-amber-500"  },
-  info:     { color: "text-blue-400",  bg: "bg-blue-400/10",  label: "info",     border: "border-l-blue-500"   },
+  info:     { color: "text-emerald-400",  bg: "bg-emerald-400/10",  label: "info",     border: "border-l-emerald-500"   },
 };
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -88,7 +88,7 @@ function Timeline({ incident }: { incident: IncidentRecord }) {
     { time: at(90),  label: "Possible cause identified",
       desc: causeLine,                                                   color: "bg-yellow-500", done: true },
     { time: at(120), label: "Fix suggested",
-      desc: "Remediation Agent prepared a Terraform change",             color: "bg-blue-500",   done: true },
+      desc: "Remediation Agent prepared a Terraform change",             color: "bg-emerald-500",   done: true },
     { time: at(180),
       label: incident.status === "approved" ? "Engineer approved" : incident.status === "rejected" ? "Engineer rejected" : "Awaiting engineer approval",
       desc:  incident.status === "approved" ? "Fix approved — remediation executed" : incident.status === "rejected" ? "Fix dismissed — manual intervention chosen" : "Pending human review on the Approvals page",
@@ -96,7 +96,7 @@ function Timeline({ incident }: { incident: IncidentRecord }) {
       done:  incident.status !== "needs_approval",
     },
     { time: at(200), label: "Report generated",
-      desc: "Incident report written and posted to Slack",               color: "bg-violet-500", done: !!incident.report },
+      desc: "Incident report written and posted to Slack",               color: "bg-emerald-500", done: !!incident.report },
   ];
   return (
     <div className="space-y-0">
@@ -128,7 +128,7 @@ function FixPlanCard({ text }: { text: string }) {
         const content  = line.replace(/^[•\-]\s*/, "").replace(/^\d+\.\s*/, "");
         if (isBullet) return (
           <div key={i} className="flex items-start gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
             <p className="text-sm text-slate-300 leading-relaxed">{content}</p>
           </div>
         );
@@ -199,7 +199,7 @@ export default function IncidentsPage() {
   const kpiConfig = [
     { title: "Total Incidents",   value: totalIncidents,    icon: BarChart3,   color: "text-slate-300", borderColor: "border-slate-400/20", trend: "All time"          },
     { title: "Critical Incidents",value: criticalIncidents, icon: AlertTriangle,color:"text-red-400",   borderColor: "border-red-400/20",   trend: "Requires attention"},
-    { title: "Approved",          value: approvedCount,     icon: ShieldCheck,  color:"text-blue-400",  borderColor: "border-blue-400/20",  trend: "Remediated"        },
+    { title: "Approved",          value: approvedCount,     icon: ShieldCheck,  color:"text-emerald-400",  borderColor: "border-emerald-400/20",  trend: "Remediated"        },
     { title: "Pending Approval",  value: pendingCount,      icon: ShieldAlert,  color:"text-amber-400", borderColor: "border-amber-400/20", trend: "Awaiting review"   },
   ];
 
@@ -210,7 +210,7 @@ export default function IncidentsPage() {
     <div className="text-slate-100">
       <main className="max-w-7xl mx-auto space-y-6">
         <div>
-          <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
+          <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
             <ChevronLeft className="h-4 w-4" /> Dashboard
           </a>
           <h2 className="text-2xl font-bold text-slate-100">Incidents</h2>
@@ -239,13 +239,13 @@ export default function IncidentsPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
             <input type="text" placeholder="Search by ID, root cause, or status..."
               value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              className="h-10 w-full rounded-lg border border-slate-800 bg-slate-900 pl-9 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <Filter className="h-4 w-4 text-slate-500 shrink-0" />
             {(["all", "needs_approval", "approved", "rejected"] as const).map((f) => (
               <button key={f} onClick={() => { setFilter(f); setCurrentPage(1); }}
-                className={`rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800"}`}>
+                className={`rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors ${filter === f ? "bg-emerald-600 text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800"}`}>
                 {f === "all" ? "All" : f === "needs_approval" ? "Needs Approval" : f === "approved" ? "Approved" : "Rejected"}
               </button>
             ))}
@@ -343,7 +343,7 @@ export default function IncidentsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { downloadIncidentPdf(selectedIncident); logAudit("Downloaded PDF report", selectedIncident.id); }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/20 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
                   >
                     <Download className="h-3.5 w-3.5" /> Download PDF
                   </button>
@@ -363,9 +363,9 @@ export default function IncidentsPage() {
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Metrics</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { label: "Average CPU", value: metrics.avg,        icon: Cpu,        color: "text-blue-400"    },
+                      { label: "Average CPU", value: metrics.avg,        icon: Cpu,        color: "text-emerald-400"    },
                       { label: "Peak CPU",    value: metrics.peak,       icon: TrendingUp,  color: "text-amber-400"   },
-                      { label: "Datapoints",  value: metrics.datapoints, icon: Database,    color: "text-purple-400"  },
+                      { label: "Datapoints",  value: metrics.datapoints, icon: Database,    color: "text-emerald-400"  },
                       { label: "Status",      value: metrics.status,     icon: Activity,    color: metrics.statusColor},
                     ].map((m) => (
                       <div key={m.label} className="rounded-lg bg-slate-950 border border-slate-800 p-3">
@@ -390,10 +390,10 @@ export default function IncidentsPage() {
                       <p className="text-sm font-medium text-slate-200">AI Analysis Quality</p>
                       <p className="text-xs text-slate-500 mt-0.5">{aiScore >= 90 ? "Excellent" : aiScore >= 75 ? "Good" : "Moderate"}</p>
                     </div>
-                    <span className={`text-2xl font-bold ${aiScore >= 90 ? "text-emerald-400" : "text-blue-400"}`}>{aiScore}<span className="text-sm font-normal text-slate-500">/100</span></span>
+                    <span className={`text-2xl font-bold ${aiScore >= 90 ? "text-emerald-400" : "text-emerald-400"}`}>{aiScore}<span className="text-sm font-normal text-slate-500">/100</span></span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                    <div className={`h-full rounded-full ${aiScore >= 90 ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${aiScore}%` }} />
+                    <div className={`h-full rounded-full ${aiScore >= 90 ? "bg-emerald-500" : "bg-emerald-500"}`} style={{ width: `${aiScore}%` }} />
                   </div>
                 </div>
                 {/* Root Cause */}
@@ -405,8 +405,8 @@ export default function IncidentsPage() {
                 </div>
                 {/* Fix Plan */}
                 <div>
-                  <div className="flex items-center gap-2 mb-2"><Wrench className="h-4 w-4 text-blue-400" /><p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Recommended Fix</p></div>
-                  <div className="rounded-lg bg-slate-950 border border-blue-500/20 border-l-2 border-l-blue-500 p-4">
+                  <div className="flex items-center gap-2 mb-2"><Wrench className="h-4 w-4 text-emerald-400" /><p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Recommended Fix</p></div>
+                  <div className="rounded-lg bg-slate-950 border border-emerald-500/20 border-l-2 border-l-emerald-500 p-4">
                     <FixPlanCard text={selectedIncident.fix_plan || "No fix plan generated."} />
                   </div>
                 </div>

@@ -11,12 +11,12 @@ function iconFor(action: string) {
   const a = action.toLowerCase();
   if (a.includes("approved")) return { Icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-400/10" };
   if (a.includes("rejected")) return { Icon: XCircle, color: "text-red-400", bg: "bg-red-400/10" };
-  if (a.includes("signed in")) return { Icon: LogIn, color: "text-blue-400", bg: "bg-blue-400/10" };
+  if (a.includes("signed in")) return { Icon: LogIn, color: "text-emerald-400", bg: "bg-emerald-400/10" };
   if (a.includes("signed out")) return { Icon: LogOut, color: "text-slate-400", bg: "bg-slate-400/10" };
-  if (a.includes("pdf") || a.includes("report")) return { Icon: FileDown, color: "text-violet-400", bg: "bg-violet-400/10" };
+  if (a.includes("pdf") || a.includes("report")) return { Icon: FileDown, color: "text-emerald-400", bg: "bg-emerald-400/10" };
   if (a.includes("demo") || a.includes("simulat")) return { Icon: FlaskConical, color: "text-amber-400", bg: "bg-amber-400/10" };
-  if (a.includes("pipeline")) return { Icon: Rocket, color: "text-blue-400", bg: "bg-blue-400/10" };
-  if (a.includes("security") || a.includes("scan")) return { Icon: Shield, color: "text-cyan-400", bg: "bg-cyan-400/10" };
+  if (a.includes("pipeline")) return { Icon: Rocket, color: "text-emerald-400", bg: "bg-emerald-400/10" };
+  if (a.includes("security") || a.includes("scan")) return { Icon: Shield, color: "text-emerald-400", bg: "bg-emerald-400/10" };
   return { Icon: Bot, color: "text-slate-400", bg: "bg-slate-400/10" };
 }
 
@@ -48,7 +48,7 @@ export default function AuditPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
+          <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
             <ChevronLeft className="h-4 w-4" /> Dashboard
           </a>
           <h1 className="text-2xl font-bold text-slate-100">Audit Logs</h1>

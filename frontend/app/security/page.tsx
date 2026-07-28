@@ -47,7 +47,7 @@ const catIcon: Record<string, typeof Lock> = {
 const sevStyle: Record<string, string> = {
   critical: "border-red-400/25 text-red-400 bg-red-400/10",
   medium:   "border-amber-400/25 text-amber-400 bg-amber-400/10",
-  low:      "border-blue-400/25 text-blue-400 bg-blue-400/10",
+  low:      "border-emerald-400/25 text-emerald-400 bg-emerald-400/10",
 };
 
 export default function SecurityPage() {
@@ -81,7 +81,7 @@ export default function SecurityPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
+          <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
             <ChevronLeft className="h-4 w-4" /> Dashboard
           </a>
           <h1 className="text-2xl font-bold text-slate-100">Security Agent</h1>
@@ -89,13 +89,13 @@ export default function SecurityPage() {
         </div>
         <div className="flex items-center gap-2">
           {report && (
-            <span className={`text-xs px-2.5 py-1 rounded-full border ${report.simulated ? "border-violet-500/30 bg-violet-500/10 text-violet-300" : "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"}`}>
+            <span className={`text-xs px-2.5 py-1 rounded-full border ${report.simulated ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"}`}>
               {report.simulated ? "🧪 Demo data" : "✓ Live AWS scan"}
             </span>
           )}
           <button
             onClick={() => setDemoMode((p) => !p)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-300 hover:bg-violet-500/20 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
           >
             <FlaskConical className="h-3.5 w-3.5" />
             {demoMode ? "Show Live Scan" : "Show Demo Scan"}
@@ -142,10 +142,10 @@ export default function SecurityPage() {
           <div className="text-3xl font-bold text-red-400">{report?.findings ? criticalCount : "—"}</div>
           <p className="text-xs text-slate-500 mt-1">{(report?.findings.length ?? 0) - criticalCount} medium/low</p>
         </div>
-        <div className="rounded-xl border border-blue-400/20 bg-slate-900/50 p-5">
+        <div className="rounded-xl border border-emerald-400/20 bg-slate-900/50 p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-slate-400">Checks Run</span>
-            <ShieldCheck className="h-4 w-4 text-blue-400" />
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
           </div>
           <div className="text-3xl font-bold text-slate-100">{report?.checks_run ?? "—"}</div>
           <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">

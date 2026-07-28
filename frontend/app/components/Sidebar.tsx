@@ -14,7 +14,7 @@ import { logAudit } from "../lib/audit";
 const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 
 const navItems = [
-  { label: "Dashboard",  href: "/",          icon: LayoutDashboard },
+  { label: "Dashboard",  href: "/dashboard", icon: LayoutDashboard },
   { label: "Incidents",  href: "/incidents",  icon: FileText        },
   { label: "Approvals",  href: "/approvals",  icon: ShieldAlert     },
   { label: "Analytics",  href: "/analytics",  icon: BarChart3       },
@@ -45,7 +45,7 @@ export function Sidebar() {
   const logout = () => {
     logAudit("Signed out");
     localStorage.removeItem("cloudpilot_user");
-    window.location.replace("/login");
+    window.location.replace("/");
   };
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export function Sidebar() {
   const badgeStyle = (href: string) => {
     if (href === "/approvals")     return "bg-amber-400/15 text-amber-400 border border-amber-400/20";
     if (href === "/notifications") return "bg-red-500/15 text-red-400 border border-red-400/20";
-    return "bg-blue-400/15 text-blue-400 border border-blue-400/20";
+    return "bg-emerald-400/15 text-emerald-400 border border-emerald-400/20";
   };
 
   const renderLink = (item: { href: string; label: string; icon: typeof Bell }) => {
@@ -104,14 +104,14 @@ export function Sidebar() {
         href={item.href}
         className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
           isActive
-            ? "bg-gradient-to-r from-blue-600/20 to-violet-600/10 text-blue-300 border border-blue-500/25 shadow-[0_0_12px_-3px_rgba(59,130,246,0.35)]"
+            ? "bg-gradient-to-r from-emerald-600/20 to-emerald-600/10 text-emerald-300 border border-emerald-500/25 shadow-[0_0_12px_-3px_rgba(59,130,246,0.35)]"
             : "text-slate-400 hover:bg-slate-900 hover:text-slate-200 hover:translate-x-0.5 border border-transparent"
         }`}
       >
         {isActive && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-gradient-to-b from-blue-400 to-violet-500" />
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded-r-full bg-gradient-to-b from-emerald-300 to-emerald-600" />
         )}
-        <Icon className={`h-4 w-4 shrink-0 transition-colors ${isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
+        <Icon className={`h-4 w-4 shrink-0 transition-colors ${isActive ? "text-emerald-400" : "text-slate-500 group-hover:text-slate-300"}`} />
         <span className="flex-1">{item.label}</span>
         {badge !== null && (
           <span className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold ${badgeStyle(item.href)}`}>
@@ -133,10 +133,10 @@ export function Sidebar() {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shrink-0">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 shrink-0">
           <Cloud className="h-4 w-4 text-white" />
         </div>
-        <span className="font-bold text-sm bg-gradient-to-r from-blue-300 via-slate-100 to-violet-300 bg-clip-text text-transparent">
+        <span className="font-bold text-sm bg-gradient-to-r from-emerald-200 via-white to-emerald-400 bg-clip-text text-transparent">
           CloudPilot AI
         </span>
       </div>
@@ -157,12 +157,12 @@ export function Sidebar() {
       >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-violet-600/10 pointer-events-none" />
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-600/30 shrink-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/10 via-transparent to-emerald-600/10 pointer-events-none" />
+        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 shadow-lg shadow-emerald-600/30 shrink-0">
           <Cloud className="h-4.5 w-4.5 text-white" />
         </div>
         <div className="relative flex-1">
-          <span className="font-bold text-sm leading-none bg-gradient-to-r from-blue-300 via-slate-100 to-violet-300 bg-clip-text text-transparent">
+          <span className="font-bold text-sm leading-none bg-gradient-to-r from-emerald-200 via-white to-emerald-400 bg-clip-text text-transparent">
             CloudPilot AI
           </span>
           <p className="text-[10px] text-slate-500 mt-0.5">DevOps Assistant</p>
@@ -202,7 +202,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-slate-800 space-y-3">
         {user && (
           <div className="flex items-center gap-2.5 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-[11px] font-bold text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 text-[11px] font-bold text-white">
               {user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">

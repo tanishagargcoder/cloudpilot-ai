@@ -24,7 +24,7 @@ const API_URL = "https://cloudpilot-ai-backend.onrender.com";
 const LOCAL_KEY = "cloudpilot_notifications";
 
 const severityConfig = {
-  info:     { color: "text-blue-400",    bg: "bg-blue-400/10",    border: "border-blue-400/20",    icon: Activity    },
+  info:     { color: "text-emerald-400",    bg: "bg-emerald-400/10",    border: "border-emerald-400/20",    icon: Activity    },
   warning:  { color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/20",   icon: AlertTriangle},
   critical: { color: "text-red-400",     bg: "bg-red-400/10",     border: "border-red-400/20",     icon: AlertTriangle},
   success:  { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", icon: CheckCircle },
@@ -152,7 +152,7 @@ export default function NotificationsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
+        <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2">
           <ArrowLeft className="h-4 w-4" />Dashboard
         </a>
         <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Notifications</h1>
@@ -165,7 +165,7 @@ export default function NotificationsPage() {
           <Filter className="h-4 w-4 text-slate-500" />
           {(["all", "unread", "read"] as const).map((f) => (
             <button key={f} onClick={() => { setFilter(f); setSelectedIds(new Set()); }}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800"}`}>
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${filter === f ? "bg-emerald-600 text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800"}`}>
               {f === "all" ? `All (${notifications.length})` : f === "unread" ? `Unread (${unreadCount})` : `Read (${readCount})`}
             </button>
           ))}
@@ -225,10 +225,10 @@ export default function NotificationsPage() {
           const TypeIcon = typeIcons[notif.type] || Activity;
           const isSelected = selectedIds.has(notif.id);
           return (
-            <Card key={notif.id} className={`group transition-all ${!notif.read ? "border-slate-700/60 bg-slate-900/70" : "opacity-75"} ${isSelected ? "ring-2 ring-blue-500/30 border-blue-500/30" : ""}`}>
+            <Card key={notif.id} className={`group transition-all ${!notif.read ? "border-slate-700/60 bg-slate-900/70" : "opacity-75"} ${isSelected ? "ring-2 ring-emerald-500/30 border-emerald-500/30" : ""}`}>
               <div className="flex items-start gap-3 p-4">
-                <button onClick={() => toggleSelect(notif.id)} className="mt-1 shrink-0 text-slate-500 hover:text-blue-400 transition-colors">
-                  {isSelected ? <CheckSquare className="h-4 w-4 text-blue-400" /> : <Square className="h-4 w-4" />}
+                <button onClick={() => toggleSelect(notif.id)} className="mt-1 shrink-0 text-slate-500 hover:text-emerald-400 transition-colors">
+                  {isSelected ? <CheckSquare className="h-4 w-4 text-emerald-400" /> : <Square className="h-4 w-4" />}
                 </button>
                 <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${sev.bg} border ${sev.border}`}>
                   <TypeIcon className={`h-4 w-4 ${sev.color}`} />
@@ -256,7 +256,7 @@ export default function NotificationsPage() {
                     </div>
                   </div>
                 </div>
-                {!notif.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500 animate-pulse" />}
+                {!notif.read && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />}
               </div>
             </Card>
           );

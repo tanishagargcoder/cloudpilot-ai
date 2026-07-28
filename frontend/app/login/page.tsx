@@ -25,7 +25,7 @@ export default function LoginPage() {
       JSON.stringify({ name, email: userEmail, loginTime: new Date().toISOString() })
     );
     logAudit("Signed in", userEmail, name);
-    window.location.replace("/");
+    window.location.replace("/dashboard");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,17 +53,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background glows */}
-      <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-blue-600/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-40 -right-32 h-[500px] w-[500px] rounded-full bg-violet-600/15 blur-3xl pointer-events-none" />
+      <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-emerald-600/15 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-32 h-[500px] w-[500px] rounded-full bg-emerald-600/15 blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 left-1/2 h-64 w-64 rounded-full bg-emerald-600/8 blur-3xl pointer-events-none" />
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-2xl shadow-blue-600/40 mb-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 shadow-2xl shadow-emerald-600/40 mb-4">
             <Cloud className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-300 via-slate-100 to-violet-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-200 via-white to-emerald-400 bg-clip-text text-transparent">
             CloudPilot AI
           </h1>
           <p className="text-sm text-slate-500 mt-1">AI-powered DevOps monitoring & remediation</p>
@@ -77,7 +77,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-medium text-slate-400 mb-1.5 block">Email</label>
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950/60 px-3.5 py-2.5 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all">
+              <div className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950/60 px-3.5 py-2.5 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all">
                 <Mail className="h-4 w-4 text-slate-500 shrink-0" />
                 <input
                   type="email"
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
             <div>
               <label className="text-xs font-medium text-slate-400 mb-1.5 block">Password</label>
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950/60 px-3.5 py-2.5 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/30 transition-all">
+              <div className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-950/60 px-3.5 py-2.5 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all">
                 <Lock className="h-4 w-4 text-slate-500 shrink-0" />
                 <input
                   type={showPassword ? "text" : "password"}
@@ -120,7 +120,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-lg shadow-blue-600/25"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-lg shadow-emerald-600/25"
             >
               <LogIn className="h-4 w-4" />
               {loading ? "Signing in..." : "Sign In"}
@@ -137,7 +137,7 @@ export default function LoginPage() {
           <button
             onClick={handleDemoLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 disabled:opacity-50 px-4 py-2.5 text-sm font-semibold text-violet-300 transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 disabled:opacity-50 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition-colors"
           >
             <Sparkles className="h-4 w-4" />
             Continue with Demo Account

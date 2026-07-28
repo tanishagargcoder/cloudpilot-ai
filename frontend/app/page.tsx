@@ -1,832 +1,226 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
-} from "recharts";
-import {
-  AlertTriangle, CheckCircle, Bot, Lightbulb, Activity,
-  Pause, Play, Zap, Info, CheckCircle2,
-  RefreshCw, Hash, Clock, Gauge, Sparkles,
+  Cloud, ArrowRight, Search, Brain, Wrench, FileText,
+  ShieldCheck, DollarSign, Sparkles, ChevronDown,
 } from "lucide-react";
-import Link from "next/link";
-import { SkeletonChart } from "./components/Skeleton";
-import { parseServerDate } from "./lib/time";
-import { logAudit } from "./lib/audit";
+import { FlowWave } from "./components/FlowWave";
 
-const API_URL = "https://cloudpilot-ai-backend.onrender.com";
+function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
 
-type PipelineState = {
-  metrics: Record<string, unknown>;
-  anomalies: unknown[];
-  root_cause: string | null;
-  fix_plan: string | null;
-  report: string | null;
-  requires_approval: boolean;
-};
-type IncidentRecord = PipelineState & {
-  id: string;
-  created_at: string;
-  status: "healthy" | "needs_approval" | "approved" | "rejected";
-};
-type AgentEvent = {
-  event: string;
-  agent?: string;
-  result?: Record<string, unknown>;
-  message?: string;
-  final_state?: PipelineState & { id?: string; created_at?: string; status?: string };
-};
-type AgentStatus = {
-  id: string; name: string;
-  status: "running" | "idle" | "error";
-  lastSeen: string; tasks: number;
-};
-
-function CountUp({ value }: { value: number }) {
-  const [display, setDisplay] = useState(0);
   useEffect(() => {
-    if (value <= 0) { setDisplay(value); return; }
-    const duration = 700;
-    const start = performance.now();
-    let raf: number;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      setDisplay(Math.round(value * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-  return <>{display}</>;
-}
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setShown(true); },
+      { threshold: 0.25 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
-function timeAgo(iso?: string) {
-  if (!iso) return "never";
-  const mins = Math.floor((Date.now() - parseServerDate(iso).getTime()) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-const memoryData = [
-  { time: "00:00", usage: 60 }, { time: "02:00", usage: 58 }, { time: "04:00", usage: 61 },
-  { time: "06:00", usage: 68 }, { time: "08:00", usage: 75 }, { time: "10:00", usage: 78 }, { time: "12:00", usage: 76 },
-];
-const networkData = [
-  { time: "00:00", inbound: 120, outbound: 80  }, { time: "02:00", inbound: 150, outbound: 95  },
-  { time: "04:00", inbound: 110, outbound: 70  }, { time: "06:00", inbound: 200, outbound: 140 },
-  { time: "08:00", inbound: 350, outbound: 220 }, { time: "10:00", inbound: 420, outbound: 280 },
-  { time: "12:00", inbound: 380, outbound: 250 },
-];
-const statusConfig: Record<string, { color: string; bg: string; icon: typeof Play }> = {
-  running: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: Play     },
-  idle:    { color: "text-amber-400",   bg: "bg-amber-400/10",   icon: Pause    },
-  error:   { color: "text-red-400",     bg: "bg-red-400/10",     icon: Activity },
-};
-const typeConfig: Record<string, { color: string; bg: string; icon: typeof Info }> = {
-  alert:   { color: "text-red-400",     bg: "bg-red-400/10",     icon: AlertTriangle },
-  info:    { color: "text-blue-400",    bg: "bg-blue-400/10",    icon: Info          },
-  action:  { color: "text-amber-400",   bg: "bg-amber-400/10",   icon: Zap           },
-  success: { color: "text-emerald-400", bg: "bg-emerald-400/10", icon: CheckCircle2  },
-};
-
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
-      <p className="text-sm font-medium text-slate-300 mb-1">{label}</p>
-      {payload.map((e: any, i: number) => (
-        <p key={i} className="text-sm" style={{ color: e.color }}>
-          {e.name}: {e.value}{e.name?.includes("bound") ? " Mbps" : "%"}
-        </p>
-      ))}
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${className}`}
+    >
+      {children}
     </div>
   );
 }
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-800 bg-slate-900/50 text-slate-100 shadow-sm backdrop-blur-sm ${className}`}>{children}</div>;
-}
-function CardHeader({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
-}
-function CardTitle({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <h3 className={`text-lg font-semibold leading-none tracking-tight text-slate-100 ${className}`}>{children}</h3>;
-}
-function CardContent({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
-}
 
-function InsightsCard({ incidents, cpuData, pendingCount }: {
-  incidents: IncidentRecord[];
-  cpuData: { time: string; usage: number }[];
-  pendingCount: number;
-}) {
-  const [savings, setSavings] = useState<number | null>(null);
-  const [criticalFindings, setCriticalFindings] = useState<number | null>(null);
+const agents = [
+  { icon: Search,   name: "Anomaly Detector", desc: "Scans live CloudWatch metrics against your threshold" },
+  { icon: Brain,    name: "RCA Agent",        desc: "Gemini AI writes the root cause with a confidence level" },
+  { icon: Wrench,   name: "Fix Agent",        desc: "Drafts a concrete Terraform change to remediate" },
+  { icon: FileText, name: "Report Writer",    desc: "Posts a formatted incident report to Slack" },
+];
+
+const features = [
+  { icon: ShieldCheck, title: "Security Agent",      desc: "Flags open security groups, public S3 buckets and missing MFA — with a live score." },
+  { icon: DollarSign,  title: "Cost Agent",          desc: "Finds unattached volumes, idle instances and unused IPs, with monthly savings." },
+  { icon: Sparkles,    title: "AI Copilot",          desc: "Voice-enabled assistant that knows your live incident data." },
+];
+
+export default function WelcomePage() {
+  const [dashboardHref, setDashboardHref] = useState("/login");
+  const [introDone, setIntroDone] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/cost/recommendations`)
-      .then((r) => r.json())
-      .then((d) => setSavings(d.total_monthly_savings ?? null))
-      .catch(() => {});
-    fetch(`${API_URL}/security/findings`)
-      .then((r) => r.json())
-      .then((d) => setCriticalFindings((d.findings || []).filter((f: any) => f.severity === "critical").length))
-      .catch(() => {});
-  }, []);
-
-  const today = new Date().toDateString();
-  const todayIncidents = incidents.filter((i) => parseServerDate(i.created_at).toDateString() === today).length;
-  const first = cpuData[0]?.usage ?? 0;
-  const last = cpuData[cpuData.length - 1]?.usage ?? 0;
-  const cpuDelta = first > 0 ? Math.round(((last - first) / first) * 100) : 0;
-
-  const insights: string[] = [
-    cpuData.length > 0
-      ? `CPU is at ${last.toFixed(1)}%${cpuDelta !== 0 ? ` (${cpuDelta > 0 ? "+" : ""}${cpuDelta}% over the last hour)` : " and stable"}`
-      : "Waiting for CloudWatch metrics...",
-    `${todayIncidents} incident${todayIncidents === 1 ? "" : "s"} recorded today`,
-  ];
-  if (pendingCount > 0) insights.push(`${pendingCount} fix plan${pendingCount === 1 ? "" : "s"} awaiting your approval`);
-  if (savings !== null && savings > 0) insights.push(`$${savings.toFixed(2)}/month of potential cost savings found`);
-  if (criticalFindings !== null && criticalFindings > 0) insights.push(`${criticalFindings} critical security finding${criticalFindings === 1 ? "" : "s"} open`);
-
-  const recommendations: { label: string; href: string }[] = [];
-  if (criticalFindings !== null && criticalFindings > 0) recommendations.push({ label: "Fix critical security findings", href: "/security" });
-  if (pendingCount > 0) recommendations.push({ label: "Review pending approvals", href: "/approvals" });
-  if (savings !== null && savings > 0) recommendations.push({ label: "Release unused resources", href: "/cost" });
-  if (recommendations.length === 0) recommendations.push({ label: "All clear — run a pipeline scan to stay ahead", href: "/" });
-
-  return (
-    <Card className="border-violet-500/20">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-violet-400" />
-          Today's AI Insights
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            {insights.map((line, i) => (
-              <p key={i} className="text-xs text-slate-300 flex items-start gap-2">
-                <span className="text-violet-400 mt-0.5">•</span>{line}
-              </p>
-            ))}
-          </div>
-          <div className="space-y-1.5 sm:border-l sm:border-slate-800 sm:pl-4">
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Recommendations</p>
-            {recommendations.map((rec) => (
-              <Link key={rec.label} href={rec.href}
-                className="block text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                → {rec.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CloudHealthCard({ checks }: { checks: { label: string; ok: boolean }[] }) {
-  const score = checks.reduce((s, c) => s + (c.ok ? 20 : 10), 0);
-  const color = score >= 90 ? "#10b981" : score >= 70 ? "#f59e0b" : "#ef4444";
-  const R = 34;
-  const CIRC = 2 * Math.PI * R;
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Gauge className="h-4 w-4 text-emerald-400" />
-          Cloud Health Score
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-5">
-          <div className="relative h-24 w-24 shrink-0">
-            <svg viewBox="0 0 80 80" className="h-24 w-24 -rotate-90">
-              <circle cx="40" cy="40" r={R} fill="none" stroke="#1e293b" strokeWidth="7" />
-              <circle
-                cx="40" cy="40" r={R} fill="none"
-                stroke={color} strokeWidth="7" strokeLinecap="round"
-                strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - score / 100)}
-                style={{ transition: "stroke-dashoffset 1s ease-out" }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-slate-100">{score}</span>
-              <span className="text-[9px] text-slate-500">/100</span>
-            </div>
-          </div>
-          <div className="space-y-1.5 flex-1 min-w-0">
-            {checks.map((c) => (
-              <div key={c.label} className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">{c.label}</span>
-                <span className={c.ok ? "text-emerald-400" : "text-amber-400"}>{c.ok ? "✅" : "⚠️"}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SlackActivityFeed({ incidents }: { incidents: IncidentRecord[] }) {
-  const activities = incidents.slice(0, 5).flatMap((inc) => {
-    const base = parseServerDate(inc.created_at);
-    const fmt  = (d: Date) => d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-    const rows = [
-      { time: fmt(base),                                   label: "Incident Created",    color: "bg-red-500"     },
-      { time: fmt(new Date(base.getTime() + 60000)),       label: "RCA Generated",       color: "bg-amber-500"   },
-      { time: fmt(new Date(base.getTime() + 120000)),      label: "Fix Plan Ready",      color: "bg-blue-500"    },
-    ];
-    if (inc.status === "approved")             rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Deployed ✓",     color: "bg-emerald-500" });
-    else if (inc.status === "rejected")        rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Fix Rejected",       color: "bg-red-500"     });
-    else if (inc.status === "needs_approval")  rows.push({ time: fmt(new Date(base.getTime() + 180000)), label: "Approval Requested", color: "bg-amber-400"   });
-    return rows;
-  }).slice(0, 10);
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Hash className="h-4 w-4 text-emerald-400" />
-          Slack Activity Feed
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {activities.length === 0 ? (
-          <div className="text-slate-600 text-xs text-center py-8">No activity yet. Run the agent pipeline.</div>
-        ) : (
-          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-            {activities.map((a, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-[10px] text-slate-500 w-14 shrink-0">{a.time}</span>
-                <div className={`h-2 w-2 rounded-full shrink-0 ${a.color}`} />
-                <span className="text-xs text-slate-300">{a.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function Dashboard() {
-  const [events, setEvents]           = useState<AgentEvent[]>([]);
-  const [running, setRunning]         = useState(false);
-  const [connected, setConnected]     = useState(false);
-  const [incidents, setIncidents]     = useState<IncidentRecord[]>([]);
-  const [cpuData, setCpuData]         = useState<{ time: string; usage: number }[]>([]);
-  const [memData, setMemData]         = useState<{ time: string; usage: number }[]>([]);
-  const [netData, setNetData]         = useState<{ time: string; inbound: number; outbound: number }[]>([]);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [runStatus, setRunStatus]     = useState("");
-  const wsRef   = useRef<WebSocket | null>(null);
-  const feedRef = useRef<HTMLDivElement>(null);
-
-  const fetchIncidents = useCallback(async () => {
     try {
-      const res  = await fetch(`${API_URL}/incidents`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setIncidents(data);
-        localStorage.setItem("cloudpilot_incidents", JSON.stringify(data));
-      }
-    } catch {
-      const stored = localStorage.getItem("cloudpilot_incidents");
-      if (stored) { try { setIncidents(JSON.parse(stored)); } catch {} }
+      if (localStorage.getItem("cloudpilot_user")) setDashboardHref("/dashboard");
+    } catch {}
+  }, []);
+
+  // Hold the page still while the camera flies in, then hand scroll back.
+  useEffect(() => {
+    if (introDone) {
+      document.body.style.overflow = "";
+      return;
     }
-  }, []);
-
-  const fetchCpu = useCallback(() => {
-    fetch(`${API_URL}/metrics/ec2-cpu`)
-      .then((r) => r.json())
-      .then((data) => {
-        const pts = (data.datapoints || [])
-          .sort((a: any, b: any) => new Date(a.Timestamp).getTime() - new Date(b.Timestamp).getTime())
-          .map((p: any) => ({
-            time: new Date(p.Timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-            usage: Math.round(p.Average * 100) / 100,
-          }));
-        if (pts.length > 0) setCpuData(pts);
-        setLastUpdated(new Date());
-      })
-      .catch(() => {});
-  }, []);
-
-  const fetchMemory = useCallback(() => {
-    fetch(`${API_URL}/metrics/ec2-memory`)
-      .then((r) => r.json())
-      .then((data) => {
-        const pts = (data.datapoints || []).map((p: any) => ({
-          time: new Date(p.Timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-          usage: Math.round(p.Average * 100) / 100,
-        }));
-        if (pts.length > 0) setMemData(pts);
-      })
-      .catch(() => {});
-  }, []);
-
-  const fetchNetwork = useCallback(() => {
-    fetch(`${API_URL}/metrics/ec2-network`)
-      .then((r) => r.json())
-      .then((data) => {
-        const toMbps = (bytes: number) => Math.round((bytes * 8 / 300 / 1e6) * 100) / 100;
-        const inbound = data.inbound || [];
-        const outbound = data.outbound || [];
-        const pts = inbound.map((p: any, i: number) => ({
-          time: new Date(p.Timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-          inbound: toMbps(p.Average),
-          outbound: outbound[i] ? toMbps(outbound[i].Average) : 0,
-        }));
-        if (pts.length > 0) setNetData(pts);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => { fetchCpu(); fetchIncidents(); fetchMemory(); fetchNetwork(); }, []);
-
-  // Command palette actions arrive as query params
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("run") === "true") {
-      window.history.replaceState({}, "", "/");
-      runAgent();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const iv = setInterval(() => { fetchCpu(); fetchIncidents(); fetchMemory(); fetchNetwork(); }, 15000);
-    return () => clearInterval(iv);
-  }, [autoRefresh, fetchCpu, fetchIncidents, fetchMemory, fetchNetwork]);
-
-  // WebSocket only for live feed display - NOT for running pipeline
-  useEffect(() => {
-    const wsUrl = API_URL.replace("https://", "wss://").replace("http://", "ws://");
-    let ws: WebSocket;
-    let timeout: NodeJS.Timeout;
-    try {
-      ws = new WebSocket(`${wsUrl}/ws/events`);
-      wsRef.current = ws;
-      timeout = setTimeout(() => {
-        if (ws.readyState !== WebSocket.OPEN) { ws.close(); setConnected(false); }
-      }, 5000);
-      ws.onopen  = () => { setConnected(true); clearTimeout(timeout); };
-      ws.onclose = () => setConnected(false);
-      ws.onerror = () => { setConnected(false); clearTimeout(timeout); };
-      ws.onmessage = (e) => {
-        const data: AgentEvent = JSON.parse(e.data);
-        setEvents((prev) => [...prev, data]);
-        if (data.event === "pipeline_complete") {
-          setRunning(false);
-          setRunStatus("");
-          setTimeout(() => fetchIncidents(), 2000);
-        }
-      };
-    } catch { setConnected(false); }
-    return () => { clearTimeout(timeout!); ws?.close(); };
-  }, [fetchIncidents]);
-
-  useEffect(() => {
-    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
-  }, [events]);
-
-  // ── REST ONLY - No WebSocket for pipeline ────────────────────────────────
-  const runAgent = async () => {
-    if (running) return;
-    setEvents([]);
-    setRunning(true);
-    setRunStatus("Calling backend...");
-    logAudit("Ran agent pipeline");
-
-    try {
-      setEvents([{ event: "agent_start", agent: "anomaly_detector" }]);
-
-      const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 180000);
-
-      const response = await fetch(`${API_URL}/run-agent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-
-      setRunStatus("Complete! Refreshing...");
-      setConnected(true);
-
-      setEvents([
-        { event: "agent_complete", agent: "anomaly_detector", result: { anomalies: data.anomalies } },
-        { event: "agent_complete", agent: "rca_agent",        result: { root_cause: data.root_cause } },
-        { event: "agent_complete", agent: "fix_agent",        result: { fix_plan: data.fix_plan } },
-        { event: "agent_complete", agent: "report_writer",    result: { report: data.report } },
-        { event: "pipeline_complete", final_state: data },
-      ]);
-
-      // Save notification
-      const notifs = JSON.parse(localStorage.getItem("cloudpilot_notifications") || "[]");
-      notifs.unshift({
-        id:         `notif-${Date.now()}`,
-        title:      data.requires_approval ? "Approval Required" : "New Incident Created",
-        message:    `${data.id} detected`,
-        severity:   data.requires_approval ? "warning" : "critical",
-        time:       new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true }),
-        read:       false,
-        type:       data.requires_approval ? "approval" : "incident",
-        created_at: new Date().toISOString(),
-      });
-      localStorage.setItem("cloudpilot_notifications", JSON.stringify(notifs));
-
-      // Fetch fresh from MongoDB
-      await new Promise((r) => setTimeout(r, 2000));
-      await fetchIncidents();
-      setRunStatus("");
-
-    } catch (err: any) {
-      if (err?.name === "AbortError") {
-        setEvents([{ event: "error", message: "⏱️ Timed out. Try again in 30 seconds." }]);
-      } else {
-        setEvents([{ event: "error", message: `❌ ${err?.message || "Unknown error"}` }]);
-      }
-      setRunStatus("");
-    } finally {
-      setRunning(false);
-    }
-  };
-
-  const getAgentLabel = (ev: AgentEvent) => {
-    if (ev.event === "agent_start")       return `⚙️ Running ${ev.agent}...`;
-    if (ev.event === "agent_complete")    return `✅ ${ev.agent} complete`;
-    if (ev.event === "pipeline_complete") return `🎉 Pipeline complete!`;
-    if (ev.event === "connected")         return `🔗 Connected to CloudPilot AI`;
-    if (ev.event === "error")             return ev.message || "Error";
-    return ev.message || ev.event;
-  };
-  const getEventType = (ev: string) => {
-    if (ev === "agent_start")       return "info";
-    if (ev === "agent_complete")    return "success";
-    if (ev === "pipeline_complete") return "action";
-    if (ev === "error")             return "alert";
-    return "info";
-  };
-  const getIncidentSeverity = (inc: IncidentRecord) => {
-    if (inc.status === "needs_approval" || inc.status === "rejected") return "critical";
-    if ((inc.anomalies as unknown[])?.length > 0) return "warning";
-    return "info";
-  };
-
-  const severityConfig: Record<string, { color: string; bg: string; label: string }> = {
-    critical: { color: "text-red-400",    bg: "bg-red-400/10",    label: "critical" },
-    warning:  { color: "text-amber-400",  bg: "bg-amber-400/10",  label: "warning"  },
-    info:     { color: "text-blue-400",   bg: "bg-blue-400/10",   label: "info"     },
-  };
-  const statusBadge: Record<string, string> = {
-    healthy:        "bg-emerald-400/10 text-emerald-400",
-    needs_approval: "bg-amber-400/10 text-amber-400",
-    approved:       "bg-blue-400/10 text-blue-400",
-    rejected:       "bg-red-400/10 text-red-400",
-  };
-
-  const pendingCount    = incidents.filter((i) => i.status === "needs_approval").length;
-  const recommendations = incidents.filter((i) => i.fix_plan && !i.fix_plan.startsWith("No fix needed")).length;
-  const activeIncidents = incidents.length;
-  const healthyServices = Math.max(0, 24 - activeIncidents);
-
-  // Real agent status derived from actual pipeline runs (no mock data)
-  const lastRun = incidents[0]?.created_at;
-  const agentSeen = running ? "just now" : timeAgo(lastRun);
-  const agents: AgentStatus[] = [
-    { id: "1", name: "Monitoring Agent",  status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.length },
-    { id: "2", name: "Analysis Agent",    status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.filter((i) => i.root_cause).length },
-    { id: "3", name: "Remediation Agent", status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.filter((i) => i.fix_plan).length },
-    { id: "4", name: "Report Agent",      status: running ? "running" : "idle", lastSeen: agentSeen, tasks: incidents.filter((i) => i.report).length },
-  ];
-  const runningAgents = running ? agents.length : 0;
-
-  const latestCpu = cpuData.length > 0 ? cpuData[cpuData.length - 1].usage : 0;
-  const healthChecks = [
-    { label: "Performance",  ok: latestCpu < 70 },
-    { label: "Security",     ok: pendingCount === 0 },
-    { label: "Cost",         ok: healthyServices >= 19 },
-    { label: "Availability", ok: cpuData.length > 0 || incidents.length > 0 },
-    { label: "Reliability",  ok: incidents.filter((i) => i.status === "rejected").length === 0 },
-  ];
-
-  const kpiConfig = [
-    { title: "Active Incidents",   value: activeIncidents, icon: AlertTriangle, color: "text-red-400",    borderColor: "border-red-400/20",    trend: `${activeIncidents} open`, href: "/incidents" },
-    { title: "Healthy Services",   value: healthyServices, icon: CheckCircle,   color: "text-emerald-400",borderColor: "border-emerald-400/20", trend: `${Math.round((healthyServices/24)*100)}% uptime`, href: "/services" },
-    { title: "AI Agents",          value: agents.length,   icon: Bot,           color: "text-blue-400",   borderColor: "border-blue-400/20",   trend: running ? `${runningAgents}/${agents.length} running now` : `idle · last run ${agentSeen}`, href: null },
-    { title: "AI Recommendations", value: recommendations, icon: Lightbulb,     color: "text-amber-400",  borderColor: "border-amber-400/20",  trend: pendingCount > 0 ? `${pendingCount} pending review →` : "0 pending review", href: "/approvals" },
-  ];
+    window.scrollTo(0, 0);
+    document.body.style.overflow = "hidden";
+    // Safety net: never leave the page locked if the scene can't animate.
+    const failsafe = setTimeout(() => setIntroDone(true), 7000);
+    return () => { clearTimeout(failsafe); document.body.style.overflow = ""; };
+  }, [introDone]);
 
   return (
-    <div className="text-slate-100">
-      <main className="max-w-7xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Real-time AWS monitoring and AI-powered remediation</p>
-        </div>
+    <div className="relative bg-black text-slate-100">
+      <FlowWave onIntroDone={() => setIntroDone(true)} />
 
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className={`inline-flex h-2.5 w-2.5 rounded-full ${connected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
-            <span className={connected ? "text-emerald-400" : "text-amber-400"}>
-              {connected ? "WebSocket connected" : "REST mode active"}
+      {/* Top bar */}
+      <header
+        className={`fixed top-0 inset-x-0 z-20 flex items-center px-6 py-5 pointer-events-none transition-opacity duration-1000 ${introDone ? "opacity-100" : "opacity-0"}`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 shadow-lg shadow-emerald-500/30">
+            <Cloud className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-sm font-semibold tracking-tight text-slate-100">CloudPilot AI</span>
+        </div>
+      </header>
+
+      {/* Scroll content — total height drives the camera dive */}
+      <div className="relative z-10 pointer-events-none">
+        {/* 1 — Hero */}
+        <section className="flex h-screen flex-col items-center justify-center px-6 text-center">
+          <div
+            className={`transition-all duration-1000 ease-out ${introDone ? "opacity-100 translate-y-0 blur-0" : "opacity-0 translate-y-8 blur-sm"}`}
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/5 px-3.5 py-1.5 text-[11px] font-medium uppercase tracking-[0.15em] text-emerald-300 backdrop-blur-sm">
+              Autonomous DevOps
             </span>
-            {runStatus && <span className="text-xs text-slate-400 ml-2">· {runStatus}</span>}
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock className="h-3.5 w-3.5" />
-              {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            <h1 className="mt-7 text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
+              <span className="bg-gradient-to-r from-emerald-200 via-white to-emerald-300 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(52,232,154,0.25)]">
+                CloudPilot AI
+              </span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-slate-300/90 sm:text-lg">
+              AI agents that detect, diagnose and fix your AWS incidents —
+              <span className="text-emerald-300"> with a human in the loop</span> before anything ships.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+              <a
+                href={dashboardHref}
+                className="pointer-events-auto group inline-flex items-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-emerald-950 shadow-[0_0_30px_-6px_rgba(52,232,154,0.7)] transition-all hover:bg-emerald-300 hover:shadow-[0_0_40px_-4px_rgba(52,232,154,0.9)]"
+              >
+                Launch dashboard
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </a>
             </div>
-            <button onClick={() => setAutoRefresh((p) => !p)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${autoRefresh ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-900 text-slate-500 border-slate-800"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${autoRefresh ? "bg-emerald-500 animate-pulse" : "bg-slate-600"}`} />
-              Auto Refresh
-            </button>
-            <button onClick={() => { fetchCpu(); fetchIncidents(); }}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh Now
-            </button>
-            <button onClick={() => runAgent()} disabled={running}
-              className={`rounded-lg px-5 py-2 text-sm font-semibold text-white transition-colors ${running ? "cursor-not-allowed bg-slate-700" : "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"}`}>
-              {running ? `⏳ ${runStatus || "Running..."}` : "🚀 Run Agent Pipeline"}
-            </button>
           </div>
-        </div>
 
-        <InsightsCard incidents={incidents} cpuData={cpuData} pendingCount={pendingCount} />
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {kpiConfig.map((kpi) => {
-            const card = (
-              <Card className={`${kpi.borderColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-900/20 ${kpi.href ? "cursor-pointer" : ""}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-slate-300">{kpi.title}</CardTitle>
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${kpi.color.replace("text-", "bg-").replace("400", "400/10")}`}>
-                    <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-slate-100"><CountUp value={kpi.value} /></div>
-                  <p className="text-xs text-slate-400 mt-1">{kpi.trend}</p>
-                </CardContent>
-              </Card>
-            );
-            return kpi.href
-              ? <Link key={kpi.title} href={kpi.href}>{card}</Link>
-              : <div key={kpi.title}>{card}</div>;
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                CPU Usage
-                <span className="text-xs font-normal text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">Live from AWS</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {cpuData.length === 0 ? (
-                <SkeletonChart />
-              ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={cpuData}>
-                  <defs>
-                    <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}   />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="usage" stroke="#3b82f6" strokeWidth={2} fill="url(#cpuGrad)" name="CPU Usage" />
-                </AreaChart>
-              </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                Memory Usage
-                {memData.length > 0 ? (
-                  <span className="text-xs font-normal text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">Live from AWS</span>
-                ) : (
-                  <span className="text-xs font-normal text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">Simulated</span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={memData.length > 0 ? memData : memoryData}>
-                  <defs>
-                    <linearGradient id="memGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}   />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit="%" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="usage" stroke="#10b981" strokeWidth={2} fill="url(#memGrad)" name="Memory Usage" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                Network Traffic
-                {netData.length > 0 ? (
-                  <span className="text-xs font-normal text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">Live from AWS</span>
-                ) : (
-                  <span className="text-xs font-normal text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full">Simulated</span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={netData.length > 0 ? netData : networkData}>
-                  <defs>
-                    <linearGradient id="inGrad"  x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#8b5cf6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}   />
-                    </linearGradient>
-                    <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}   />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} unit=" Mbps" />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="inbound"  stroke="#8b5cf6" strokeWidth={2} fill="url(#inGrad)"  name="Inbound"  />
-                  <Area type="monotone" dataKey="outbound" stroke="#f59e0b" strokeWidth={2} fill="url(#outGrad)" name="Outbound" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-1">
-            <CardHeader><CardTitle className="text-base">Agent Status</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {agents.map((agent) => {
-                const cfg  = statusConfig[agent.status] || statusConfig.idle;
-                const Icon = cfg.icon;
-                return (
-                  <div key={agent.id} className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/80 p-3 hover:border-slate-700 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${cfg.bg}`}>
-                        <Icon className={`h-4 w-4 ${cfg.color}`} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-200">{agent.name}</p>
-                        <p className="text-xs text-slate-500">Last seen {agent.lastSeen}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.color}`}>{agent.status}</span>
-                      <p className="text-xs text-slate-500 mt-1">{agent.tasks} tasks</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                </span>
-                Live Agent Feed
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div ref={feedRef} className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
-                {events.length === 0 && (
-                  <div className="text-slate-600 text-sm text-center py-24">Click "Run Agent Pipeline" to start monitoring</div>
-                )}
-                {events.map((ev, i) => {
-                  const evType = getEventType(ev.event);
-                  const cfg    = typeConfig[evType] || typeConfig.info;
-                  const Icon   = cfg.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${cfg.bg}`}>
-                        <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-slate-300">{getAgentLabel(ev)}</p>
-                          <p className="text-xs text-slate-600 shrink-0">just now</p>
-                        </div>
-                        {ev.result && (
-                          <p className="text-xs text-slate-500 font-mono mt-1 break-all">
-                            {JSON.stringify(ev.result).slice(0, 120)}...
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <CloudHealthCard checks={healthChecks} />
-          <SlackActivityFeed incidents={incidents} />
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm">Recent Incidents</CardTitle>
-              <Link href="/incidents" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">View all →</Link>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-800">
-                      <th className="pb-2 pr-3 text-left text-xs font-medium text-slate-400">Severity</th>
-                      <th className="pb-2 pr-3 text-left text-xs font-medium text-slate-400">Status</th>
-                      <th className="pb-2 pr-3 text-left text-xs font-medium text-slate-400">Root Cause</th>
-                      <th className="pb-2 text-left text-xs font-medium text-slate-400">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    {incidents.length === 0 && (
-                      <tr><td colSpan={4} className="py-6 text-center text-slate-600 text-xs">No incidents yet. Run the agent pipeline.</td></tr>
-                    )}
-                    {incidents.slice(0, 5).map((inc) => {
-                      const sev = severityConfig[getIncidentSeverity(inc)];
-                      return (
-                        <tr key={inc.id} className="hover:bg-slate-800/50 transition-colors">
-                          <td className="py-2 pr-3">
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sev.bg} ${sev.color}`}>{sev.label}</span>
-                          </td>
-                          <td className="py-2 pr-3">
-                            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge[inc.status] || "bg-slate-800 text-slate-400"}`}>
-                              {inc.status.replace("_", " ")}
-                            </span>
-                          </td>
-                          <td className="py-2 pr-3 text-slate-400 max-w-[160px] truncate text-xs">
-                            {(inc.root_cause || "—").replace(/\*\*/g, "").slice(0, 50)}
-                          </td>
-                          <td className="py-2 text-slate-500 text-xs whitespace-nowrap">
-                            {parseServerDate(inc.created_at).toLocaleTimeString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {events.some((e) => e.event === "pipeline_complete") && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {[
-              { label: "Anomalies Found", value: (events.find((e) => e.agent === "anomaly_detector" && e.event === "agent_complete")?.result?.anomalies as unknown[])?.length ?? 0, color: "text-red-400"    },
-              { label: "Root Cause",      value: "Generated ✓",     color: "text-blue-400"    },
-              { label: "Fix Plan",        value: "Ready for review", color: "text-emerald-400" },
-            ].map(({ label, value, color }) => (
-              <Card key={label}>
-                <CardContent className="pt-6">
-                  <div className="text-xs text-slate-500 uppercase tracking-wider">{label}</div>
-                  <div className={`text-2xl font-bold ${color} mt-2`}>{value}</div>
-                </CardContent>
-              </Card>
-            ))}
+          <div
+            className={`absolute bottom-10 flex flex-col items-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-emerald-300/40 transition-opacity duration-1000 delay-500 ${introDone ? "opacity-100" : "opacity-0"}`}
+          >
+            scroll
+            <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
           </div>
-        )}
-      </main>
+        </section>
+
+        {/* 2 — Pipeline */}
+        <section className="flex min-h-screen items-center justify-center px-6 py-24">
+          <div className="mx-auto w-full max-w-5xl">
+            <Reveal className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Four agents. One pipeline.</h2>
+              <p className="mx-auto mt-3 max-w-lg text-sm text-slate-400">
+                Every incident flows through the same chain — from raw CloudWatch metrics to a Terraform fix waiting for your approval.
+              </p>
+            </Reveal>
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {agents.map((a, i) => (
+                <Reveal key={a.name} className={`[transition-delay:${i * 80}ms]`}>
+                  <div className="h-full rounded-2xl border border-emerald-400/10 bg-slate-950/50 p-5 backdrop-blur-md transition-colors hover:border-emerald-400/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-400/10">
+                        <a.icon className="h-4 w-4 text-emerald-300" />
+                      </div>
+                      <span className="font-mono text-[10px] text-emerald-400/40">0{i + 1}</span>
+                    </div>
+                    <h3 className="mt-4 text-sm font-semibold text-slate-100">{a.name}</h3>
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{a.desc}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 3 — Human in the loop */}
+        <section className="flex min-h-screen items-center justify-center px-6 py-24">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
+              The AI proposes.
+              <br />
+              <span className="text-emerald-300">You approve.</span>
+            </h2>
+            <p className="mx-auto mt-6 max-w-lg text-sm leading-relaxed text-slate-400 sm:text-base">
+              No fix reaches your infrastructure without an engineer clicking approve. Every decision —
+              approvals, rejections, scans, exports — lands in an immutable audit log and your Slack channel.
+            </p>
+          </Reveal>
+        </section>
+
+        {/* 4 — Features */}
+        <section className="flex min-h-screen items-center justify-center px-6 py-24">
+          <div className="mx-auto w-full max-w-4xl">
+            <Reveal className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">More than monitoring</h2>
+            </Reveal>
+            <div className="mt-12 grid gap-4 sm:grid-cols-3">
+              {features.map((f) => (
+                <Reveal key={f.title}>
+                  <div className="h-full rounded-2xl border border-white/10 bg-slate-950/50 p-6 backdrop-blur-md transition-colors hover:border-emerald-400/30">
+                    <f.icon className="h-5 w-5 text-emerald-300" />
+                    <h3 className="mt-4 text-sm font-semibold text-slate-100">{f.title}</h3>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-400">{f.desc}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 5 — Stack */}
+        <section className="flex min-h-screen items-center justify-center px-6 py-24">
+          <Reveal className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-emerald-300/50">Built with</p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-slate-400">
+              {["Next.js", "FastAPI", "AWS CloudWatch", "Gemini AI", "Terraform", "MongoDB", "Slack"].map((t) => (
+                <span key={t} className="transition-colors hover:text-emerald-300">{t}</span>
+              ))}
+            </div>
+          </Reveal>
+        </section>
+
+        {/* 6 — CTA */}
+        <section className="flex min-h-screen flex-col items-center justify-center px-6 py-24 text-center">
+          <Reveal>
+            <h2 className="text-4xl font-bold tracking-tight sm:text-6xl">
+              <span className="bg-gradient-to-r from-emerald-200 via-white to-emerald-300 bg-clip-text text-transparent">
+                See it running
+              </span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-md text-sm text-slate-400">
+              Live AWS metrics, real incidents, real remediation plans.
+            </p>
+            <a
+              href={dashboardHref}
+              className="pointer-events-auto group mt-9 inline-flex items-center gap-2 rounded-full bg-emerald-400 px-7 py-3.5 text-sm font-semibold text-emerald-950 shadow-[0_0_35px_-6px_rgba(52,232,154,0.8)] transition-all hover:bg-emerald-300"
+            >
+              Launch dashboard
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </a>
+            <p className="mt-8 text-[11px] text-slate-600">
+              Demo login · demo@cloudpilot.ai / demo123
+            </p>
+          </Reveal>
+        </section>
+      </div>
     </div>
   );
 }

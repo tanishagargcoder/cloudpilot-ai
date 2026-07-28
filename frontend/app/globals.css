@@ -9,8 +9,8 @@
 }
 
 .dark {
-  --background: #020617;
-  --foreground: #f1f5f9;
+  --background: #000000;
+  --foreground: #eafff5;
 }
 
 
@@ -52,7 +52,7 @@
 :root:not(.dark) .bg-emerald-400\/10 { background-color: rgba(16,185,129,0.15) !important; }
 :root:not(.dark) .bg-amber-400\/10 { background-color: rgba(245,158,11,0.15) !important; }
 :root:not(.dark) .bg-red-400\/10 { background-color: rgba(239,68,68,0.15) !important; }
-:root:not(.dark) .bg-blue-400\/10 { background-color: rgba(59,130,246,0.15) !important; }
+:root:not(.dark) .bg-emerald-400\/10 { background-color: rgba(52,232,154,0.15) !important; }
 
 /* Analytics cards */
 :root:not(.dark) .rounded-2xl { 
@@ -101,30 +101,72 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1a4430;
   border-radius: 6px;
 }
 
 /* Cards */
 .glass-card {
   border-radius: 16px;
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(22, 58, 41, 0.6);
+  background: rgba(6, 18, 13, 0.75);
   backdrop-filter: blur(10px);
 }
 
 .glass-card-hover {
   border-radius: 16px;
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(22, 58, 41, 0.6);
+  background: rgba(6, 18, 13, 0.75);
   backdrop-filter: blur(10px);
   transition: all 0.25s ease;
 }
 
 .glass-card-hover:hover {
-  border-color: rgba(96, 165, 250, 0.4);
+  border-color: rgba(52, 232, 154, 0.4);
   transform: translateY(-2px);
 }
+
+/* ── Black + green surfaces ───────────────────────────────────────────────
+   The dashboard is authored with slate surfaces; in dark mode they are
+   remapped to the near-black / emerald palette used by the landing scene. */
+.dark .bg-slate-950            { background-color: #000000 !important; }
+.dark .bg-slate-950\/50        { background-color: rgba(0, 0, 0, 0.6) !important; }
+.dark .bg-slate-950\/60        { background-color: rgba(0, 0, 0, 0.7) !important; }
+
+.dark .bg-slate-900            { background-color: #06120d !important; }
+.dark .bg-slate-900\/40        { background-color: rgba(6, 18, 13, 0.55) !important; }
+.dark .bg-slate-900\/50        { background-color: rgba(6, 18, 13, 0.65) !important; }
+.dark .bg-slate-900\/60        { background-color: rgba(6, 18, 13, 0.72) !important; }
+.dark .bg-slate-900\/80        { background-color: rgba(6, 18, 13, 0.88) !important; }
+.dark .bg-slate-900\/95,
+.dark .bg-slate-900\/98        { background-color: rgba(6, 18, 13, 0.96) !important; }
+
+.dark .bg-slate-800            { background-color: #0c2118 !important; }
+.dark .bg-slate-800\/50        { background-color: rgba(12, 33, 24, 0.6) !important; }
+.dark .bg-slate-800\/60        { background-color: rgba(12, 33, 24, 0.7) !important; }
+.dark .bg-slate-800\/80        { background-color: rgba(12, 33, 24, 0.85) !important; }
+.dark .bg-slate-700            { background-color: #123021 !important; }
+.dark .bg-slate-600            { background-color: #1a4430 !important; }
+
+.dark .border-slate-800        { border-color: #12301f !important; }
+.dark .border-slate-800\/60,
+.dark .border-slate-800\/70    { border-color: rgba(18, 48, 31, 0.75) !important; }
+.dark .border-slate-700        { border-color: #1a4430 !important; }
+.dark .border-slate-700\/60    { border-color: rgba(26, 68, 48, 0.7) !important; }
+.dark .border-slate-600        { border-color: #22553a !important; }
+
+.dark .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-800\/70 > :not([hidden]) ~ :not([hidden]) { border-color: #12301f !important; }
+
+.dark .hover\:bg-slate-800:hover      { background-color: #0c2118 !important; }
+.dark .hover\:bg-slate-800\/50:hover,
+.dark .hover\:bg-slate-800\/60:hover  { background-color: rgba(12, 33, 24, 0.65) !important; }
+.dark .hover\:bg-slate-900:hover      { background-color: #06120d !important; }
+.dark .hover\:border-slate-700:hover  { border-color: #1a4430 !important; }
+.dark tbody tr:hover                  { background-color: rgba(12, 33, 24, 0.5) !important; }
+
+/* Charts inherit the same green-tinted grid */
+.dark .recharts-cartesian-grid line { stroke: #12301f !important; }
 
 /* Animations */
 .animate-in {

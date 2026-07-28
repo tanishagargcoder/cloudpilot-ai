@@ -11,14 +11,14 @@ import { CommandPalette } from "./CommandPalette";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // Landing and login render full-screen, without the dashboard shell
-  const isPublic = pathname === "/login" || pathname === "/welcome";
+  const isPublic = pathname === "/" || pathname === "/login" || pathname === "/welcome";
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
     if (isPublic) return;
     // Demo-grade auth: session lives in localStorage
     const user = localStorage.getItem("cloudpilot_user");
-    if (!user) window.location.replace("/welcome");
+    if (!user) window.location.replace("/login");
     else setAuthed(true);
   }, [pathname, isPublic]);
 
@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-600/30 animate-pulse">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 shadow-lg shadow-emerald-600/30 animate-pulse">
             <Cloud className="h-6 w-6 text-white" />
           </div>
           <p className="text-xs text-slate-600">Loading CloudPilot AI...</p>

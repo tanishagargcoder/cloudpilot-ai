@@ -58,7 +58,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     <button
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-        checked ? "bg-blue-600" : "bg-slate-700"
+        checked ? "bg-emerald-600" : "bg-slate-700"
       }`}
     >
       <span
@@ -125,7 +125,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors">
+          <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </a>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
       {/* Monitoring */}
       <Card>
         <div className="flex items-center gap-4 mb-6">
-          <SectionIcon icon={Cpu} color="bg-blue-400/10" />
+          <SectionIcon icon={Cpu} color="bg-emerald-400/10" />
           <div>
             <CardTitle>Monitoring Settings</CardTitle>
             <CardDescription>Configure alert thresholds for system metrics</CardDescription>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { label: "CPU Threshold", key: "cpuThreshold", unit: "%", min: 50, max: 100, color: "accent-blue-500" },
+            { label: "CPU Threshold", key: "cpuThreshold", unit: "%", min: 50, max: 100, color: "accent-emerald-500" },
             { label: "Memory Threshold", key: "memoryThreshold", unit: "%", min: 50, max: 100, color: "accent-emerald-500" },
             { label: "Network Threshold", key: "networkThreshold", unit: " Mbps", min: 100, max: 5000, color: "accent-purple-500" },
           ].map((field) => (
@@ -172,7 +172,7 @@ export default function SettingsPage() {
       {/* AI Settings */}
       <Card>
         <div className="flex items-center gap-4 mb-6">
-          <SectionIcon icon={Brain} color="bg-purple-400/10" />
+          <SectionIcon icon={Brain} color="bg-emerald-400/10" />
           <div>
             <CardTitle>AI Settings</CardTitle>
             <CardDescription>Configure Gemini model and analysis confidence</CardDescription>
@@ -184,7 +184,7 @@ export default function SettingsPage() {
             <select
               value={settings.ai.geminiModel}
               onChange={(e) => update("ai", "geminiModel", e.target.value)}
-              className="w-full h-10 rounded-xl border border-slate-800/60 bg-slate-950 px-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full h-10 rounded-xl border border-slate-800/60 bg-slate-950 px-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             >
               <option value="gemini-2.0-flash">Gemini 2.0 Flash (Free)</option>
               <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
             <select
               value={settings.aws.region}
               onChange={(e) => update("aws", "region", e.target.value)}
-              className="w-full h-10 rounded-xl border border-slate-800/60 bg-slate-950 px-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full h-10 rounded-xl border border-slate-800/60 bg-slate-950 px-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             >
               <option value="ap-south-1">Asia Pacific (Mumbai) — ap-south-1</option>
               <option value="us-east-1">US East (N. Virginia) — us-east-1</option>
@@ -239,7 +239,7 @@ export default function SettingsPage() {
               type="text"
               value={settings.aws.instanceId}
               onChange={(e) => update("aws", "instanceId", e.target.value)}
-              className="w-full h-10 rounded-xl border border-slate-800/60 bg-slate-950 px-3 text-sm text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full h-10 rounded-xl border border-slate-800/60 bg-slate-950 px-3 text-sm text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
             <p className="text-xs text-slate-600">Your monitored EC2 instance</p>
           </div>
@@ -285,8 +285,8 @@ export default function SettingsPage() {
           {/* Compact mode */}
           <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${compactMode ? "bg-blue-500/10" : "bg-slate-800"}`}>
-                <LayoutGrid className={`h-4 w-4 ${compactMode ? "text-blue-400" : "text-slate-500"}`} />
+              <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${compactMode ? "bg-emerald-500/10" : "bg-slate-800"}`}>
+                <LayoutGrid className={`h-4 w-4 ${compactMode ? "text-emerald-400" : "text-slate-500"}`} />
               </div>
               <div>
                 <p className="text-sm font-medium text-slate-200">Compact Mode</p>
@@ -305,7 +305,7 @@ export default function SettingsPage() {
             }`}>
               <p className="text-xs font-medium mb-2 opacity-60 uppercase tracking-wider">Preview</p>
               <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-lg ${isDark ? "bg-blue-600" : "bg-blue-500"} flex items-center justify-center`}>
+                <div className={`h-8 w-8 rounded-lg ${isDark ? "bg-emerald-600" : "bg-emerald-500"} flex items-center justify-center`}>
                   <Cloud className="h-4 w-4 text-white" />
                 </div>
                 <div>
@@ -327,7 +327,7 @@ export default function SettingsPage() {
       <div className="flex items-center gap-3 pb-8">
         <button
           onClick={save}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20"
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-500/20"
         >
           <Save className="h-4 w-4" />
           Save Settings

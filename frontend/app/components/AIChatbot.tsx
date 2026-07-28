@@ -323,7 +323,7 @@ User question: ${userMessage}`;
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 text-white shadow-2xl shadow-violet-500/40 hover:shadow-violet-500/60 hover:scale-105 transition-all duration-300 group"
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 text-white shadow-2xl shadow-emerald-500/40 hover:shadow-emerald-500/60 hover:scale-105 transition-all duration-300 group"
           title="Open CloudPilot AI"
         >
           <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
@@ -340,7 +340,7 @@ User question: ${userMessage}`;
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/60 bg-slate-900/60 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 shrink-0">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 shrink-0">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -360,7 +360,7 @@ User question: ${userMessage}`;
               </button>
               <button
                 onClick={() => { setVoiceMode((p) => p === "text-only" ? "voice-and-text" : "text-only"); stopSpeaking(); setIsSpeaking(false); }}
-                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${voiceMode === "voice-and-text" ? "bg-violet-500/20 text-violet-400" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/60"}`}
+                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${voiceMode === "voice-and-text" ? "bg-emerald-500/20 text-emerald-400" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/60"}`}
                 title="Toggle voice responses"
               >
                 {voiceMode === "voice-and-text" ? <AudioLines className="h-3.5 w-3.5" /> : <Type className="h-3.5 w-3.5" />}
@@ -389,7 +389,7 @@ User question: ${userMessage}`;
                   <div key={msg.id} className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                     <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl mt-0.5 ${
                       msg.role === "assistant"
-                        ? "bg-gradient-to-br from-violet-500 to-purple-700"
+                        ? "bg-gradient-to-br from-emerald-400 to-emerald-700"
                         : "bg-slate-800"
                     }`}>
                       {msg.role === "assistant"
@@ -399,10 +399,10 @@ User question: ${userMessage}`;
                     <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
                       msg.role === "assistant"
                         ? "bg-slate-900/80 border border-slate-800/60 text-slate-300"
-                        : "bg-violet-600/20 border border-violet-500/20 text-slate-200"
+                        : "bg-emerald-600/20 border border-emerald-500/20 text-slate-200"
                     }`}>
                       {msg.isVoice && msg.role === "assistant" && (
-                        <div className="flex items-center gap-1 mb-1 text-[10px] text-violet-400">
+                        <div className="flex items-center gap-1 mb-1 text-[10px] text-emerald-400">
                           <Volume2 className="h-2.5 w-2.5" /><span>Voice response</span>
                         </div>
                       )}
@@ -415,14 +415,14 @@ User question: ${userMessage}`;
                 {/* Loading dots */}
                 {isLoading && (
                   <div className="flex gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700">
                       <Sparkles className="h-3.5 w-3.5 text-white" />
                     </div>
                     <div className="bg-slate-900/80 border border-slate-800/60 rounded-2xl px-4 py-3">
                       <div className="flex gap-1 items-center">
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
                   </div>
@@ -444,7 +444,7 @@ User question: ${userMessage}`;
                         <button
                           key={s}
                           onClick={() => sendMessage(s)}
-                          className="rounded-full border border-slate-800 bg-slate-900/60 px-2.5 py-1 text-[11px] text-slate-400 hover:border-violet-500/40 hover:text-violet-400 hover:bg-violet-500/5 transition-all text-left"
+                          className="rounded-full border border-slate-800 bg-slate-900/60 px-2.5 py-1 text-[11px] text-slate-400 hover:border-emerald-500/40 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all text-left"
                         >
                           {s}
                         </button>
@@ -474,7 +474,7 @@ User question: ${userMessage}`;
                     <span className="text-[11px] text-red-400">Listening... speak now</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 rounded-xl border border-slate-800/60 bg-slate-900/50 px-3 py-2 focus-within:ring-1 focus-within:ring-violet-500/40 focus-within:border-violet-500/30 transition-all">
+                <div className="flex items-center gap-2 rounded-xl border border-slate-800/60 bg-slate-900/50 px-3 py-2 focus-within:ring-1 focus-within:ring-emerald-500/40 focus-within:border-emerald-500/30 transition-all">
                   <input
                     ref={inputRef}
                     type="text"
@@ -494,7 +494,7 @@ User question: ${userMessage}`;
                     className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
                       isListening
                         ? "bg-red-500/20 text-red-400 animate-pulse"
-                        : "text-slate-500 hover:text-violet-400 hover:bg-violet-500/10"
+                        : "text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10"
                     }`}
                     title={isListening ? "Stop listening" : "Voice input"}
                   >
@@ -503,7 +503,7 @@ User question: ${userMessage}`;
                   <button
                     onClick={() => sendMessage(input)}
                     disabled={!input.trim() || isListening || isLoading}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send className="h-3 w-3" />
                   </button>

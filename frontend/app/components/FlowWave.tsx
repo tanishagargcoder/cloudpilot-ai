@@ -35,6 +35,11 @@ const parallax = 1.2;
 const pointerRadius = 7.0;
 const pointerStrength = 0.9;
 
+/* Cinematic entry: the camera starts far above and behind the field and
+   flies into it before scroll takes over. */
+const introDuration = 3.6;
+const introStartY = 30, introStartZ = 62;
+
 const LAYERS = { NONE: 0, TORUS_SCENE: 1, BLOOM_SCENE: 2, ENTIRE_SCENE: 3 };
 
 const Lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -69,8 +74,10 @@ float snoise(vec3 v){
   return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
 }`;
 
-export function FlowWave() {
+export function FlowWave({ onIntroDone }: { onIntroDone?: () => void } = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const introCb = useRef(onIntroDone);
+  introCb.current = onIntroDone;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -338,32 +345,44 @@ void main(){ vec2 p = gl_PointCoord - 0.5; float l = length(p); if (l > 0.5) dis
 
     /* ── Per-frame update ─────────────────────────────────────────────────── */
     let stream = 0;
-    const appearStart = performance.now();
+    // Driven by frame deltas, not wall clock, so the entry always plays even
+    // if the tab starts hidden (rAF is paused there).
+    let introElapsed = 0;
+    let appearElapsed = 0;
     let t0 = performance.now() / 1000;
+    let introFired = false;
 
     const updateScene = (scroll: number, m: { x: number; y: number }) => {
       const t = performance.now() / 1000;
       const dt = Math.min(0.05, t - t0); t0 = t;
       uniforms.uTime.value = t;
 
-      stream += dt * (flow * 2.0) * 4.0;
+      // Entry flight: smootherstep from the far approach into the hero framing.
+      introElapsed += dt;
+      appearElapsed += dt;
+      const introT = Math.min(1, introElapsed / introDuration);
+      const ip = introT * introT * introT * (introT * (introT * 6 - 15) + 10);
+      if (introT >= 1 && !introFired) { introFired = true; introCb.current?.(); }
+
+      // Hills rush faster while we are still flying in.
+      stream += dt * (flow * 2.0) * 4.0 * (1 + (1 - ip) * 2.5);
       uniforms.uStream.value = stream;
       uniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise);
 
       const ea = Math.min(scroll / 0.35, 1.0);
       const e = ea * ea * (3 - 2 * ea);
-      const camY = Lerp(camStartY, camEndY, e);
-      const camZ = Lerp(camStartZ, camEndZ, e);
-      camera.position.set(m.x * parallax, camY + m.y * parallax * 0.3, camZ);
-      camera.lookAt(m.x * parallax * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
+      const camY = Lerp(introStartY, Lerp(camStartY, camEndY, e), ip);
+      const camZ = Lerp(introStartZ, Lerp(camStartZ, camEndZ, e), ip);
+      const par = parallax * ip;
+      camera.position.set(m.x * par, camY + m.y * par * 0.3, camZ);
+      camera.lookAt(m.x * par * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
       group.rotation.x = -tilt;
       group.rotation.y = 0;
       updatePointerWorld();
 
       uniforms.uCursor.value.copy(POINTER.world);
       uniforms.uActivity.value = POINTER.activity;
-      const elapsed = (performance.now() - appearStart) / 1000;
-      uniforms.uAppear.value = Math.max(0, Math.min(1, (elapsed - 0.2) / 1.4));
+      uniforms.uAppear.value = Math.max(0, Math.min(1, (appearElapsed - 0.2) / 1.4));
     };
 
     /* ── Resize ───────────────────────────────────────────────────────────── */

@@ -40,7 +40,7 @@ const REMEDIATION_STEPS = [
 const severityConfig = {
   critical: { color: "text-red-400",   bg: "bg-red-400/10",   label: "critical" },
   warning:  { color: "text-amber-400", bg: "bg-amber-400/10", label: "warning"  },
-  info:     { color: "text-blue-400",  bg: "bg-blue-400/10",  label: "info"     },
+  info:     { color: "text-emerald-400",  bg: "bg-emerald-400/10",  label: "info"     },
 };
 
 export default function ApprovalsPage() {
@@ -145,7 +145,7 @@ export default function ApprovalsPage() {
 
   const kpiConfig = [
     { title: "Pending Approvals", value: pendingIncidents.length, icon: ShieldAlert, color: "text-amber-400", border: "border-amber-400/20", trend: "Awaiting review"   },
-    { title: "Approved Today",    value: approvedToday,           icon: ShieldCheck, color: "text-blue-400",  border: "border-blue-400/20",  trend: "Remediated today" },
+    { title: "Approved Today",    value: approvedToday,           icon: ShieldCheck, color: "text-emerald-400",  border: "border-emerald-400/20",  trend: "Remediated today" },
     { title: "Rejected Today",    value: rejectedToday,           icon: ShieldX,     color: "text-red-400",   border: "border-red-400/20",   trend: "Dismissed today"  },
   ];
 
@@ -153,7 +153,7 @@ export default function ApprovalsPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-3">
+        <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-3">
           <ChevronLeft className="h-4 w-4" />Dashboard
         </a>
         <div className="flex items-center justify-between">
@@ -233,10 +233,10 @@ export default function ApprovalsPage() {
                 {/* Fix Plan */}
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5 text-blue-400" />
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recommended Fix</span>
                   </div>
-                  <div className="rounded-lg border border-blue-500/20 border-l-2 border-l-blue-500 bg-slate-950/50 p-3 text-sm text-slate-200 leading-relaxed">
+                  <div className="rounded-lg border border-emerald-500/20 border-l-2 border-l-emerald-500 bg-slate-950/50 p-3 text-sm text-slate-200 leading-relaxed">
                     {(incident.fix_plan || "No fix plan generated.").replace(/\*\*/g, "").replace(/\*/g, "")}
                   </div>
                 </div>
@@ -261,7 +261,7 @@ export default function ApprovalsPage() {
                   <button
                     onClick={() => { downloadIncidentPdf(incident); logAudit("Downloaded PDF report", incident.id); }}
                     title="Download incident report as PDF"
-                    className="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-300 hover:bg-blue-500/20 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-colors"
                   >
                     <Download className="h-4 w-4" />PDF
                   </button>
@@ -294,7 +294,7 @@ export default function ApprovalsPage() {
                       <Check className="h-3 w-3 text-emerald-400" />
                     </span>
                   ) : i === remediationStep ? (
-                    <Loader2 className="h-5 w-5 text-blue-400 animate-spin shrink-0" />
+                    <Loader2 className="h-5 w-5 text-emerald-400 animate-spin shrink-0" />
                   ) : (
                     <span className="h-5 w-5 rounded-full border border-slate-700 shrink-0" />
                   )}

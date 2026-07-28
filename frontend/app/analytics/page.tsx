@@ -23,13 +23,13 @@ type IncidentRecord = {
 };
 
 const COLORS = {
-  cpu: "#3b82f6",
+  cpu: "#34e89a",
   critical: "#ef4444",
   warning: "#f59e0b",
   approved: "#10b981",
   pending: "#f59e0b",
   rejected: "#ef4444",
-  healthy: "#3b82f6",
+  healthy: "#34e89a",
 };
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -105,10 +105,10 @@ function extractServices(incidents: IncidentRecord[]): { name: string; count: nu
 
   // If no keywords matched, fall back to generic
   if (Object.keys(counts).length === 0 && incidents.length > 0) {
-    return [{ name: "EC2 Instance", count: incidents.length, color: "#3b82f6" }];
+    return [{ name: "EC2 Instance", count: incidents.length, color: "#34e89a" }];
   }
 
-  const palette = ["#ef4444", "#f59e0b", "#3b82f6", "#10b981", "#8b5cf6", "#06b6d4"];
+  const palette = ["#ef4444", "#f59e0b", "#34e89a", "#10b981", "#6ee7b7", "#06b6d4"];
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
@@ -185,11 +185,11 @@ export default function AnalyticsPage() {
   }, [incidents]);
 
   const kpiCards = [
-    { title: "Total Incidents",   value: stats.total,           icon: BarChart3,  color: "text-blue-400",    trend: "From agent pipeline runs" },
+    { title: "Total Incidents",   value: stats.total,           icon: BarChart3,  color: "text-emerald-400",    trend: "From agent pipeline runs" },
     { title: "Critical Incidents",value: stats.critical,        icon: AlertTriangle,color:"text-red-400",    trend: "With anomalies detected" },
     { title: "Approval Rate",     value: `${stats.approvalRate}%`,icon: ShieldCheck,color:"text-emerald-400",trend: "Fixes approved" },
     { title: "Fixes Approved",    value: stats.approved,        icon: Clock,      color: "text-amber-400",   trend: "Remediated incidents" },
-    { title: "MTTR",              value: stats.mttr,            icon: Timer,      color: stats.mttr === "N/A" ? "text-slate-500" : "text-purple-400", trend: stats.mttr === "N/A" ? "No resolved incidents yet" : "Mean time to resolution" },
+    { title: "MTTR",              value: stats.mttr,            icon: Timer,      color: stats.mttr === "N/A" ? "text-slate-500" : "text-emerald-400", trend: stats.mttr === "N/A" ? "No resolved incidents yet" : "Mean time to resolution" },
   ];
 
   return (
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <a href="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors">
+            <a href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors">
               <ArrowLeft className="h-4 w-4" />
               Dashboard
             </a>
@@ -232,7 +232,7 @@ export default function AnalyticsPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Cpu className="h-5 w-5 text-blue-400" />
+              <Cpu className="h-5 w-5 text-emerald-400" />
               <h3 className="text-base font-semibold text-slate-200">CPU Usage — Last Hour</h3>
             </div>
             <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
@@ -269,7 +269,7 @@ export default function AnalyticsPage() {
               <Activity className="h-5 w-5 text-emerald-400" />
               <h3 className="text-base font-semibold text-slate-200">Incident Trend — Last 7 Days</h3>
             </div>
-            <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full border border-blue-400/20">Real data</span>
+            <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">Real data</span>
           </div>
           <div className="h-[240px]">
             {incidents.length === 0 ? (
@@ -361,7 +361,7 @@ export default function AnalyticsPage() {
         {/* ── Top Affected Services ── */}
         <Card>
           <div className="flex items-center gap-3 mb-4">
-            <Server className="h-5 w-5 text-purple-400" />
+            <Server className="h-5 w-5 text-emerald-400" />
             <h3 className="text-base font-semibold text-slate-200">Top Affected Services</h3>
           </div>
           {stats.topServices.length === 0 ? (
