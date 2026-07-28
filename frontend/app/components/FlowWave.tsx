@@ -74,10 +74,17 @@ float snoise(vec3 v){
   return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
 }`;
 
-export function FlowWave({ onIntroDone }: { onIntroDone?: () => void } = {}) {
+/** Seconds the launch warp takes before the dashboard is loaded. */
+export const WARP_DURATION = 1.15;
+
+export function FlowWave(
+  { onIntroDone, warping = false }: { onIntroDone?: () => void; warping?: boolean } = {}
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const introCb = useRef(onIntroDone);
   introCb.current = onIntroDone;
+  const warpRef = useRef(warping);
+  warpRef.current = warping;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -349,6 +356,7 @@ void main(){ vec2 p = gl_PointCoord - 0.5; float l = length(p); if (l > 0.5) dis
     // if the tab starts hidden (rAF is paused there).
     let introElapsed = 0;
     let appearElapsed = 0;
+    let warpElapsed = 0;
     let t0 = performance.now() / 1000;
     let introFired = false;
 
@@ -364,18 +372,27 @@ void main(){ vec2 p = gl_PointCoord - 0.5; float l = length(p); if (l > 0.5) dis
       const ip = introT * introT * introT * (introT * (introT * 6 - 15) + 10);
       if (introT >= 1 && !introFired) { introFired = true; introCb.current?.(); }
 
-      // Hills rush faster while we are still flying in.
-      stream += dt * (flow * 2.0) * 4.0 * (1 + (1 - ip) * 2.5);
+      // Launch warp: accelerate straight through the field before handing off
+      // to the dashboard.
+      if (warpRef.current) warpElapsed += dt;
+      const wt = Math.min(1, warpElapsed / WARP_DURATION);
+      const wEase = wt * wt * wt;
+
+      // Hills rush faster while we are still flying in, and far faster on warp.
+      stream += dt * (flow * 2.0) * 4.0 * (1 + (1 - ip) * 2.5 + wEase * 24);
       uniforms.uStream.value = stream;
-      uniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise);
+      uniforms.uWaveHeight.value = waveHeight * (1 + scroll * scrollRise + wEase * 1.6);
 
       const ea = Math.min(scroll / 0.35, 1.0);
       const e = ea * ea * (3 - 2 * ea);
-      const camY = Lerp(introStartY, Lerp(camStartY, camEndY, e), ip);
-      const camZ = Lerp(introStartZ, Lerp(camStartZ, camEndZ, e), ip);
-      const par = parallax * ip;
+      const baseY = Lerp(introStartY, Lerp(camStartY, camEndY, e), ip);
+      const baseZ = Lerp(introStartZ, Lerp(camStartZ, camEndZ, e), ip);
+      // Dive low and punch forward through the hills during the warp.
+      const camY = Lerp(baseY, 0.4, wEase);
+      const camZ = Lerp(baseZ, -34, wEase);
+      const par = parallax * ip * (1 - wEase);
       camera.position.set(m.x * par, camY + m.y * par * 0.3, camZ);
-      camera.lookAt(m.x * par * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e));
+      camera.lookAt(m.x * par * 0.5, Lerp(0.0, 0.6, e), Lerp(lookStartZ, lookEndZ, e) - wEase * 20);
       group.rotation.x = -tilt;
       group.rotation.y = 0;
       updatePointerWorld();

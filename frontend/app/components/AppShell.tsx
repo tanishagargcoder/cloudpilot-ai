@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Cloud } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { AIChatbot } from "./AIChatbot";
 import { KeepAlive } from "./KeepAlive";
@@ -24,15 +23,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isPublic) return <>{children}</>;
 
-  // Splash while the session check runs (avoids flashing protected content)
+  // Splash while the session check runs (avoids flashing protected content).
+  // Echoes the landing's wave rather than showing a logo.
   if (!authed) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700 shadow-lg shadow-emerald-600/30 animate-pulse">
-            <Cloud className="h-6 w-6 text-white" />
-          </div>
-          <p className="text-xs text-slate-600">Loading CloudPilot AI...</p>
+      <div className="min-h-screen bg-black flex items-center justify-center overflow-hidden">
+        <div className="flex items-end gap-1.5 h-16">
+          {Array.from({ length: 14 }).map((_, i) => (
+            <span
+              key={i}
+              className="w-1 rounded-full bg-gradient-to-t from-emerald-700/40 to-emerald-300 wave-bar"
+              style={{ animationDelay: `${i * 90}ms` }}
+            />
+          ))}
         </div>
       </div>
     );

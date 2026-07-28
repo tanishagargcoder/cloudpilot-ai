@@ -5,7 +5,7 @@ import {
   Cloud, ArrowRight, Search, Brain, Wrench, FileText,
   ShieldCheck, DollarSign, Sparkles, ChevronDown,
 } from "lucide-react";
-import { FlowWave } from "./components/FlowWave";
+import { FlowWave, WARP_DURATION } from "./components/FlowWave";
 
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -48,6 +48,16 @@ const features = [
 export default function WelcomePage() {
   const [dashboardHref, setDashboardHref] = useState("/login");
   const [introDone, setIntroDone] = useState(false);
+  const [warping, setWarping] = useState(false);
+
+  // Fly through the wave, then hand over to the dashboard.
+  const launch = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (warping) return;
+    setWarping(true);
+    document.body.style.overflow = "hidden";
+    setTimeout(() => { window.location.href = dashboardHref; }, WARP_DURATION * 1000);
+  };
 
   useEffect(() => {
     try {
@@ -70,7 +80,12 @@ export default function WelcomePage() {
 
   return (
     <div className="relative bg-black text-slate-100">
-      <FlowWave onIntroDone={() => setIntroDone(true)} />
+      <FlowWave onIntroDone={() => setIntroDone(true)} warping={warping} />
+
+      {/* Warp flash — brightens into the dashboard hand-off */}
+      <div
+        className={`pointer-events-none fixed inset-0 z-40 bg-[radial-gradient(circle_at_center,rgba(52,232,154,0.55),rgba(2,22,12,0.9)_55%,#000_100%)] transition-opacity duration-[900ms] ease-in ${warping ? "opacity-100" : "opacity-0"}`}
+      />
 
       {/* Top bar */}
       <header
@@ -105,7 +120,7 @@ export default function WelcomePage() {
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
               <a
-                href={dashboardHref}
+                href={dashboardHref} onClick={launch}
                 className="pointer-events-auto group inline-flex items-center gap-2 rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-emerald-950 shadow-[0_0_30px_-6px_rgba(52,232,154,0.7)] transition-all hover:bg-emerald-300 hover:shadow-[0_0_40px_-4px_rgba(52,232,154,0.9)]"
               >
                 Launch dashboard
@@ -209,7 +224,7 @@ export default function WelcomePage() {
               Live AWS metrics, real incidents, real remediation plans.
             </p>
             <a
-              href={dashboardHref}
+              href={dashboardHref} onClick={launch}
               className="pointer-events-auto group mt-9 inline-flex items-center gap-2 rounded-full bg-emerald-400 px-7 py-3.5 text-sm font-semibold text-emerald-950 shadow-[0_0_35px_-6px_rgba(52,232,154,0.8)] transition-all hover:bg-emerald-300"
             >
               Launch dashboard
